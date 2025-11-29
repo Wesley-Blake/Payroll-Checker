@@ -1,22 +1,25 @@
 try:
     import os
-    #from datetime import date
+    from datetime import date
     from pathlib import Path
-    import win32com.client as win32
+    from platform import system
+    if system() != "Linux": import win32com.client as win32
     import pandas
     from pandas import DataFrame
 except:
     print("Failed to import the packages.")
     exit()
 
-def myData(file: str):
+def myData(file: str) -> DataFrame:
     with open(file, "r") as f:
         df = pandas.read_csv(f)
         return df
 
 
 def email(to: str = "", cc: str = "", bcc: list = "", subject: str = "") -> None:
-    # NOTE: subject as string to mass email multipl errors for breakdown file.
+    if system() == "Linux":
+        print(f"{subject}: I ran.")
+        return None
     outlook = win32.Dispatch("outlook.application")
     mail = outlook.CreateItem(0)
 
@@ -30,27 +33,28 @@ Error: {subject}
 """
 
     mail.Send()
-    #del outlook
 
 
 # nostarted.csv
 def not_started_list(df: DataFrame) -> dict:
-    # Rules:
-    # 1. Unique manager and employee
-    # Easy to do
-    pass
+    # Rule: Anyone that didn't start a timesheet.
+    result = dict()
+    manager_emails = df["ManagerEmail"].unique().tolist()
+    for email in manager_emails:
+        result[email] = df[df["ManagerEmail"] == email]["EmployeeEmail"].unique().tolist()
+    return result
 
 # timesheetsatus.csv
 def inprogress_list(df: DataFrame) -> dict:
-    # Rules:
-    # 1. unique manager and employee
-    # Easy to do
-    pass
-def pending_list(df: DataFrame) -> dict:
-    # Rules:
-    # 1. unique manager and employee
-    # Easy to do
-    pass
+    # Rules: Employees still holding their timesheets.
+    result = dict()
+    manager_emails = df[df["Status"] == "inprogress"]["ManagerEmail"].unique().tolist()
+    for email in manager_emails:
+        result[email] = df[df["ManagerEmail"] == email]["EmployeeEmail"].unique().tolist()
+    return result
+def pending_list(df: DataFrame) -> list:
+    # Rules: List of manager emails for bcc.
+    return df["ManagerEmail"].unique().tolist()
 
 # breakdowninhours.csv
 def overlapping_hours(df: DataFrame) -> dict:
@@ -98,10 +102,21 @@ def overtime_weekend_union_list(df: DataFrame) -> dict:
     # Easy to do.
     pass
 
-print("Fuck")
+
 
 if __name__ == "__main__":
-    os.chdir("C:\\Users\\wesblake\\Documents\\Payroll-Checker")
-    df = myData("NotStarted.csv")
+    # Get to working directory.
+    files = Path.home() / "Documents" / "Payroll-Checker"
 
-    print(df)
+    # Not-Started emails.
+    df = myData(files / "NotStarted.csv")
+    not_started_result = not_started_list(df)
+    for manager, employee_list in not_started_result.items():
+        email(cc=manager, bcc=employee_list, subject="Timesheet Not Started.")
+
+    # Pending and inprogress timesheets.
+    due_date = date.today()
+    df = myData(files / "comments-status.csv")
+    inprogress_result = inprogress_list(df)
+    for manager, employee_list in not_started_result.items():
+        email(cc=manager, bcc=employee_list, subject=f"Timesheets due on {due_date}")
