@@ -11,9 +11,12 @@ except:
     exit()
 
 def myData(file: str) -> DataFrame:
-    with open(file, "r") as f:
-        df = pandas.read_csv(f)
-        return df
+    if os.path.isfile(file):
+        with open(file, "r") as f:
+            df = pandas.read_csv(f)
+            return df
+    else:
+        return None
 
 
 def email(to: str = "", cc: str = "", bcc: list = "", subject: str = "") -> None:
@@ -85,7 +88,11 @@ def overtime(_listdf: DataFrame) -> dict:
     # Rules:
     # 1. sum(Regular earnings in day) > 8.
     # Easy to do.
-    pass
+    result = dict()
+    manager_emails = df[df["Status"] == "inprogress"]["ManagerEmail"].unique().tolist()
+    for email in manager_emails:
+        result[email] = df[df["ManagerEmail"] == email]["EmployeeEmail"].unique().tolist()
+    return result
 def overtime_2x_list(df: DataFrame) -> dict:
     # Rules:
     # 1. sum(Regular earnings and Overtime) > 12.
