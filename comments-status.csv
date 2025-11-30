@@ -1,0 +1,6 @@
+ID,Name,Status,ManagerEmail,EmployeeEmail
+1,goku,pending,manager1@mail.com,1@mail.com
+2,goku,pending,manager2@mail.com,2@mail.com
+3,goku,inprogress,manager2@mail.com,3@mail.com
+4,goku,approved,manager1@mail.com,4@mail.com
+5,goku,approved,manager1@mail.com,5@mail.com

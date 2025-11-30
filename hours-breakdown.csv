@@ -1,0 +1,8 @@
+ID,Name,Date,EarnCode,IN,OUT,Hours,ManagerEmail,EmployeeEmail
+1,goku,2025-11-01,REG,0800,1200,4,manager1@mail.com,1@mail.com
+1,goku,2025-11-01,REG,1300,1700,4,manager1@mail.com,1@mail.com
+1,goku,2025-11-01,OT,1700,2100,4,manager1@mail.com,1@mail.com
+1,goku,2025-11-02,REG,1200,1600,4,manager1@mail.com,1@mail.com
+1,goku,2025-11-02,REG,1700,2100,4,manager1@mail.com,1@mail.com
+1,goku,2025-11-02,SHF,1600,2100,4,manager1@mail.com,1@mail.com
+1,goku,2025-11-02,OT,2100,2130,0.50,manager1@mail.com,1@mail.com
