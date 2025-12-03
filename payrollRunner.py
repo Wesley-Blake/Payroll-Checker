@@ -19,9 +19,9 @@ def myData(file: str) -> DataFrame:
         return None
 
 
-def email(to: str = "", cc: str = "", bcc: list = "", subject: str = "") -> None:
+def email(to: str = "", cc: str = "", bcc: list = [], subject: str = "") -> None:
     if system() == "Linux":
-        print(f"{subject}: I ran.")
+        print(f"To: {to}, CC: {cc}, BCC: {bcc}")
         return None
     outlook = win32.Dispatch("outlook.application")
     mail = outlook.CreateItem(0)
@@ -84,14 +84,23 @@ def holidays_list(df: DataFrame, holidays:  list) -> dict:
     # 2. HOL start <= HLW start && HLW end <= HOL end.
     # Medium to do.
     pass
-def overtime(_listdf: DataFrame) -> dict:
+def overtime(df: DataFrame) -> dict:
     # Rules:
-    # 1. sum(Regular earnings in day) > 8.
-    # Easy to do.
     result = dict()
-    manager_emails = df[df["Status"] == "inprogress"]["ManagerEmail"].unique().tolist()
+    # Narrow list down to hours that contribute to OVERTIME.
+    targeted_df = df[df["EarnCode"] == "REG"].drop(columns=["IN","OUT"], inplace=False)
+    # Get column names for grouping, have to drop hours to put it back in.
+    headers = targeted_df.columns.tolist()
+    headers.remove("Hours")
+    # Final product of grouping.
+    group_df = targeted_df.groupby(headers, as_index=False)["Hours"].sum()
+    final_df = group_df[group_df["Hours"] > 8]
+    #final_df.reset_index(drop=True, inplace=True)
+    if final_df.empty: return []
+    # Manager email list.
+    manager_emails = final_df["ManagerEmail"].unique().tolist()
     for email in manager_emails:
-        result[email] = df[df["ManagerEmail"] == email]["EmployeeEmail"].unique().tolist()
+        result[email] = final_df[final_df["ManagerEmail"] == email]["EmployeeEmail"].unique().tolist()
     return result
 def overtime_2x_list(df: DataFrame) -> dict:
     # Rules:
@@ -112,18 +121,37 @@ def overtime_weekend_union_list(df: DataFrame) -> dict:
 
 
 if __name__ == "__main__":
+    # NOTE: turn these into asert statments.
     # Get to working directory.
     files = Path.home() / "Documents" / "Payroll-Checker"
 
     # Not-Started emails.
-    df = myData(files / "NotStarted.csv")
-    not_started_result = not_started_list(df)
+    print("Not Started Test")
+    not_started_df = myData(files / "NotStarted.csv")
+    not_started_result = not_started_list(not_started_df)
     for manager, employee_list in not_started_result.items():
         email(cc=manager, bcc=employee_list, subject="Timesheet Not Started.")
+    print("End")
 
     # Pending and inprogress timesheets.
+    print("Inprogress")
     due_date = date.today()
-    df = myData(files / "comments-status.csv")
-    inprogress_result = inprogress_list(df)
+    inprogress_df = myData(files / "comments-status.csv")
+    inprogress_result = inprogress_list(inprogress_df)
     for manager, employee_list in not_started_result.items():
         email(cc=manager, bcc=employee_list, subject=f"Timesheets due on {due_date}")
+    print("End")
+    print("Pending")
+    pending_df = myData(files / "comments-status.csv")
+    pending_result = pending_list(pending_df)
+    email(bcc=pending_result)
+    print("End")
+
+    # Overtime.
+    print("Overtime")
+    hours_df = myData(files / "hours-breakdown.csv")
+    hours_result = overtime(hours_df)
+    for manager, employee_list in hours_result.items():
+        for employee in employee_list:
+            email(cc=manager, to=employee, subject=f"You have hours greater 8 in a day.")
+    print("End")
