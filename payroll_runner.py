@@ -1,47 +1,77 @@
+import os
+from datetime import date
+from pathlib import Path
+from platform import system
 try:
-    import os
-    from datetime import date
-    from pathlib import Path
-    from platform import system
-    if system() != "Linux": import win32com.client as win32
+    if system() != "Linux":
+        import win32com.client as win32
     import pandas
     from pandas import DataFrame
-except:
+except ImportError:
     print("Failed to import the packages.")
     exit()
 
-def myData(file: str) -> DataFrame:
+def data(file: str) -> DataFrame:
+    """
+    This function takes a .csv and returns a Dataframe.
+    
+    :param file: .csv file.
+    :type file: str
+    :return: Dataframe for use with Pandas.
+    :rtype: DataFrame
+    """
     if os.path.isfile(file):
-        with open(file, "r") as f:
+        with open(file, "r",encoding = "utf-8") as f:
             df = pandas.read_csv(f)
             return df
     else:
         return None
 
 
-def email(to: str = "", cc: str = "", bcc: list = [], subject: str = "") -> None:
+def email(to: str = "", cc: str = "", bcc: list | str = "", subject_body: str = "") -> None:
+    """
+    Uses win32com to create an email. Subject will also be body.
+    
+    :param to: Directly to who.
+    :type to: str
+    :param cc: CC to who.
+    :type cc: str
+    :param bcc: BCC to who.
+    :type bcc: list | str
+    :param subject_body: Description
+    :type subject_body: str
+    """
     if system() == "Linux":
         print(f"To: {to}, CC: {cc}, BCC: {bcc}")
         return None
     outlook = win32.Dispatch("outlook.application")
     mail = outlook.CreateItem(0)
 
-    if to != "": mail.To = to
-    if cc != "": mail.CC = cc
-    if bcc != "": mail.BCC = "; ".join(bcc)
-    mail.Subject = f"Error: {subject}"
+    if to != "":
+        mail.To = to
+    if cc != "":
+        mail.CC = cc
+    mail.BCC = "; ".join(bcc) if isinstance(bcc, list) else bcc
+    mail.subject_body = f"Error: {subject_body}"
     mail.Body = \
 f"""
-Error: {subject}
+Error: {subject_body}
 """
-
     mail.Send()
 
 
 # nostarted.csv
 def not_started_list(df: DataFrame) -> dict:
+    """
+    Uses Dataframe to get list of employees that haven't started their timesheet.
+    
+    :param df: Dataframe of employees that haven't started their timesheet.
+    :type df: DataFrame
+    :return: A dictionary of KEY: manager email VALUE: list of employee emails.
+    :rtype: dict
+    """
     # Rule: Anyone that didn't start a timesheet.
-    result = dict()
+    result = {}
     manager_emails = df["ManagerEmail"].unique().tolist()
     for email in manager_emails:
         result[email] = df[df["ManagerEmail"] == email]["EmployeeEmail"].unique().tolist()
@@ -49,13 +79,29 @@ def not_started_list(df: DataFrame) -> dict:
 
 # timesheetsatus.csv
 def inprogress_list(df: DataFrame) -> dict:
+    """
+    Uses Dataframe to get list of emplyee that still hold their timesheets.
+    
+    :param df: Dataframe of employees that hold timesheets.
+    :type df: DataFrame
+    :return: A disctionary of KEY: manager email VALUE: list of employee emails.
+    :rtype: dict
+    """
     # Rules: Employees still holding their timesheets.
-    result = dict()
+    result = {}
     manager_emails = df[df["Status"] == "inprogress"]["ManagerEmail"].unique().tolist()
     for email in manager_emails:
         result[email] = df[df["ManagerEmail"] == email]["EmployeeEmail"].unique().tolist()
     return result
 def pending_list(df: DataFrame) -> list:
+    """
+    Uses Dataframe to create a list of manager emails.
+    
+    :param df: Dataframe of employee timesheets in pending status.
+    :type df: DataFrame
+    :return: list of manager emails.
+    :rtype: list
+    """
     # Rules: List of manager emails for bcc.
     return df["ManagerEmail"].unique().tolist()
 
@@ -86,7 +132,7 @@ def holidays_list(df: DataFrame, holidays:  list) -> dict:
     pass
 def overtime(df: DataFrame) -> dict:
     # Rules:
-    result = dict()
+    result = {}
     # Narrow list down to hours that contribute to OVERTIME.
     targeted_df = df[df["EarnCode"] == "REG"].drop(columns=["IN","OUT"], inplace=False)
     # Get column names for grouping, have to drop hours to put it back in.
@@ -127,31 +173,31 @@ if __name__ == "__main__":
 
     # Not-Started emails.
     print("Not Started Test")
-    not_started_df = myData(files / "NotStarted.csv")
+    not_started_df = data(files / "NotStarted.csv")
     not_started_result = not_started_list(not_started_df)
     for manager, employee_list in not_started_result.items():
-        email(cc=manager, bcc=employee_list, subject="Timesheet Not Started.")
+        email(cc=manager, bcc=employee_list, subject_body="Timesheet Not Started.")
     print("End")
 
     # Pending and inprogress timesheets.
     print("Inprogress")
     due_date = date.today()
-    inprogress_df = myData(files / "comments-status.csv")
+    inprogress_df = data(files / "comments-status.csv")
     inprogress_result = inprogress_list(inprogress_df)
     for manager, employee_list in not_started_result.items():
-        email(cc=manager, bcc=employee_list, subject=f"Timesheets due on {due_date}")
+        email(cc=manager, bcc=employee_list, subject_body=f"Timesheets due on {due_date}")
     print("End")
     print("Pending")
-    pending_df = myData(files / "comments-status.csv")
+    pending_df = data(files / "comments-status.csv")
     pending_result = pending_list(pending_df)
     email(bcc=pending_result)
     print("End")
 
     # Overtime.
     print("Overtime")
-    hours_df = myData(files / "hours-breakdown.csv")
+    hours_df = data(files / "hours-breakdown.csv")
     hours_result = overtime(hours_df)
     for manager, employee_list in hours_result.items():
         for employee in employee_list:
-            email(cc=manager, to=employee, subject=f"You have hours greater 8 in a day.")
+            email(cc=manager, to=employee, subject_body=f"You have hours greater 8 in a day.")
     print("End")
