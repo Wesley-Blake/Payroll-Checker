@@ -20,13 +20,17 @@ def not_started_list(df: DataFrame) -> dict:
     result = {}
     headers = df.columns.tolist()
 
-    target_df = df[(df[headers[16]] != "SS") & (df[headers[16]] != "WW")]
+    target_df = df[(df[headers[16]] != "SS") &
+                   (df[headers[16]] != "SN") &
+                   (df[headers[16]] != "WW")]
+
     manager_emails = target_df[headers[18]].unique().tolist()
     for email in manager_emails:
-        result[email] = target_df[target_df[headers[18]] == email][headers[19]].unique().tolist()
+        result[email] = target_df[target_df[headers[18]] == email][headers[20]].unique().tolist()
     return result
 
 if __name__ == "__main__":
+    # NOTE: Update for changes in check file.
     import helpers.data as data
     test_df = data.data("data_examples\\NotStarted.csv")
     test = not_started_list(test_df)
