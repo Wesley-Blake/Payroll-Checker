@@ -8,7 +8,7 @@ except ImportError:
     print("Failed to import the packages.")
     sys.exit()
 
-def email(to: str, bcc: list, pay_period: str, body: list) -> None:
+def email(cc: str, bcc: list, pay_period: str, body: list) -> None:
     """
     Docstring for email
     
@@ -24,14 +24,23 @@ def email(to: str, bcc: list, pay_period: str, body: list) -> None:
     outlook = win32.Dispatch("outlook.application")
     mail = outlook.CreateItem(0)
 
-    mail.To = to
+    mail.CC = cc
     mail.BCC = "; ".join(bcc)
     mail.Subject = f"Pay Period of timesheet: {pay_period} & number of Errors: {len(body)}"
-    mail.Body = ", ".join(body)
+    mail.Body = \
+f"""\
+Hi,
+
+Error: {', '.join(body)}
+
+If you are receiving this email, it means that {len(bcc)} of your employees have not started their timesheet for the pay period: {pay_period}.
+They are BCC'd on this email, so there is no action needed on your part.
+"""
     if __name__ == "__main__":
         mail.Display()
     else:
         mail.Send()
 
 if __name__ == "__main__":
-    email(to="manager@mail.com",bcc=["employee1@mail.com","employee2@mail.com"],pay_period="BW??",body=["Errors1","Errors2"])
+    # NOTE: Update check file for new lengths
+    email(cc="manager@mail.com",bcc=["employee1@mail.com","employee2@mail.com"],pay_period="BW??",body=["Errors1","Errors2"])
