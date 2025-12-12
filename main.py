@@ -24,7 +24,7 @@ if __name__ == "__main__":
 
     emails_dict = not_started.not_started_list(not_started_df)
     for manager, employee in emails_dict.items():
-        win32com_email.email(to=manager,
+        win32com_email.email(cc=manager,
                              bcc=employee,
                              pay_period=PAY_PERIOD,
-                             body=["Not Started!"])
+                             body=["Timesheet not started."])
