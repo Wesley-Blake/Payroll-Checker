@@ -1,6 +1,11 @@
-0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,ID15,ECLS16,Name17,ManagerEmail18,EmployeeEmail19
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,UU,goku,manager1@mail.com,1@mail.com
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,OO,goku,manager2@mail.com,2@mail.com
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,WW,goku,manager2@mail.com,3@mail.com
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,SS,goku,manager1@mail.com,4@mail.com
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,WW,goku,manager1@mail.com,5@mail.com
+0,0,0,0,ID,0,0,0,0,0,0,0,0,0,0,0,0,0,ApprEmail,0,EmplEmail
+0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1@mail.com,0,manager1@mail.com
+0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,2@mail.com,1,manager1@mail.com
+0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,3@mail.com,2,manager1@mail.com
+0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,4@mail.com,3,manager1@mail.com
+0,0,0,0,5,0,0,0,0,0,0,0,0,0,0,0,0,0,5@mail.com,4,manager2@mail.com
+0,0,0,0,6,0,0,0,0,0,0,0,0,0,0,0,0,0,6@mail.com,5,manager2@mail.com
+0,0,0,0,7,0,0,0,0,0,0,0,0,0,0,0,0,0,7@mail.com,6,manager2@mail.com
+0,0,0,0,8,0,0,0,0,0,0,0,0,0,0,0,0,0,8@mail.com,7,manager2@mail.com
+0,0,0,0,9,0,0,0,0,0,0,0,0,0,0,0,0,0,9@mail.com,8,manager2@mail.com
+0,0,0,0,10,0,0,0,0,0,0,0,0,0,0,0,0,0,10@mail.com,9,manager2@mail.com

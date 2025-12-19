@@ -6,7 +6,7 @@ try:
     from pandas import DataFrame
 except ImportError:
     print("Failed to import the packages.")
-    sys.exit()
+    sys.exit(1)
 
 def not_started_list(df: DataFrame) -> dict:
     """
@@ -31,7 +31,7 @@ def not_started_list(df: DataFrame) -> dict:
 
 if __name__ == "__main__":
     # NOTE: Update for changes in check file.
-    import helpers.data as data
+    from helpers import data
     test_df = data.data("data_examples\\NotStarted.csv")
     test = not_started_list(test_df)
     print(test)
