@@ -1,0 +1,5 @@
+Campus,JobLocation,EmplID,LastName,FirstName,EmplStatus,Term_Dt_If_Any,Race_Code,Race_Desc,Ethn_Code,Ethn_Desc,spbpers_confirmed_re_cde,EthnConfirmDate,VetFileNumber,Veteran_Classification,If_Armed_Forced_medal,If_Disb_Vet,Gender,DateOfBirth,Age,ECLS,EGRP_Code,DivisionCode,DivisionName,Charts_Of_Acct,HomeOrgCode,HomeOrgName,LCAT,BCAT,CurrHireDate,AdjServiceDate,FirstWorkDate,JobType,JobEffectiveDt,JobECLS,JobStatus,PosnSuff,JobDesc,Job_FTE,HoursPerDay,HoursPerPay,AnnualSalary,RegRate,JobPayID,AssignedSalary,Factor,Pays,SalaryGroup,SalaryTable,SalaryGrade,PacificEmail,Supervisor_ID,SupervisorName,SupervisorEmail
+0,0,0001,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1@mail.com,0,0,manager1@mail.com
+0,0,0002,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2@mail.com,0,0,manager2@mail.com
+0,0,0003,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3@mail.com,0,0,manager2@mail.com
+0,0,0004,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4@mail.com,0,0,manager2@mail.com

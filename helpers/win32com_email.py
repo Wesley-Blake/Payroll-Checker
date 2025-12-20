@@ -33,13 +33,15 @@ Hi,
 
 Error: {', '.join(body)}
 
-If you are receiving this email, it means that {len(bcc)} of your employees have not started their timesheet for the pay period: {pay_period}.
+If you are receiving this email, it means that {len(bcc)} of your employees have some issue related to their timesheet: {pay_period}.
 They are BCC'd on this email, so there is no action needed on your part.
 """
     if __name__ == "__main__":
         mail.Display()
     else:
-        mail.Send()
+        #mail.Send()
+        #mail.Display()
+        return 0
 
 if __name__ == "__main__":
     # NOTE: Update check file for new lengths

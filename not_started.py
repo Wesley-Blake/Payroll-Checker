@@ -26,7 +26,9 @@ def not_started_list(df: DataFrame) -> dict:
 
     manager_emails = target_df[headers[18]].unique().tolist()
     for email in manager_emails:
-        result[email] = target_df[target_df[headers[18]] == email][headers[20]].unique().tolist()
+        if email not in result:
+            result[email] = []
+        result[email] += target_df[target_df[headers[18]] == email][headers[20]].unique().tolist()
     return result
 
 if __name__ == "__main__":
