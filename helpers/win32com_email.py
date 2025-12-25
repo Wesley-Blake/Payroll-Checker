@@ -1,29 +1,36 @@
 """
-Docstring for helpers.win32com_email
+email module for outlook
+
+This module simplifies the email process for my payroll_checker package.
+
+Dependencies:
+    - Requres win32come
 """
 import sys
 try:
     import win32com.client as win32
 except ImportError:
-    print("Failed to import the packages.")
-    sys.exit()
+    sys.exit(f"Failed to import the packages. {__file__}")
 
-def email(cc: str, bcc: list, pay_period: str, body: list) -> None:
+def email(cc: str, bcc: list[str], pay_period: str, body: list[str]) -> None:
     """
-    Docstring for email
-    
-    :param to: Description
-    :type to: str
-    :param bcc: Description
-    :type bcc: list
-    :param pay_period: Description
-    :type pay_period: str
-    :param body: Description
-    :type body: list
+    Parameters:
+        cc (str): would only be 1 manager.
+        bcc (list[str]): employees to recieve email with shared manager.
+        pay_period (str): info for employee to know what pay period.
+        body (list[str]): for me, to inform employee how many error there were.
+    Returns:
+        None
+    Raises:
+        ImportError: if win32com isn't installed.
+        Execption as e: if outlook fails to launch.
     """
-    outlook = win32.Dispatch("outlook.application")
+    try:
+        outlook = win32.Dispatch("outlook.application")
+    except Exception as e:
+        sys.exit(f"Failed to create Outlook application: {e}")
+
     mail = outlook.CreateItem(0)
-
     mail.CC = cc
     mail.BCC = "; ".join(bcc)
     mail.Subject = f"Pay Period of timesheet: {pay_period} & number of Errors: {len(body)}"
@@ -39,10 +46,7 @@ They are BCC'd on this email, so there is no action needed on your part.
     if __name__ == "__main__":
         mail.Display()
     else:
-        #mail.Send()
-        #mail.Display()
-        return 0
+        mail.Send()
 
 if __name__ == "__main__":
-    # NOTE: Update check file for new lengths
     email(cc="manager@mail.com",bcc=["employee1@mail.com","employee2@mail.com"],pay_period="BW??",body=["Errors1","Errors2"])
