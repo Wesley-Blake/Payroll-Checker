@@ -46,7 +46,7 @@ def not_started_list(df: DataFrame) -> dict[str, list[str]] | None:
     # Check: is list and emails are string?
     if not isinstance(manager_emails, list):
         raise ValueError(f"manager_emails is not list, got {type(manager_emails)}.\n{__file__}") #type: ignore
-    if not isinstance(manager_emails[0], str) and '@' in manager_emails[0]:
+    if not isinstance(manager_emails[0], str) or '@' not in manager_emails[0]:
         raise ValueError(f"manager_email in manager_emails is not email. {manager_emails[0]}\n{__file__}")
 
     # Populate the result dictionary.
@@ -61,8 +61,8 @@ def not_started_list(df: DataFrame) -> dict[str, list[str]] | None:
         return result
 
 if __name__ == "__main__":
-    from helpers import data
     from pathlib import Path
+    from helpers import data
     test_path = Path.cwd() / "data_examples" / "NotStarted.csv"
     if Path.is_file(test_path):
         test_df = data.data(test_path)
