@@ -12,19 +12,37 @@ try:
 except ImportError:
     sys.exit(f"Failed to import the packages. {__file__}")
 
-def email(cc: str, bcc: list[str], pay_period: str, body: list[str]) -> None:
+def email(cc: str, bcc: list[str], pay_period: str, body: str) -> None:
     """
     Parameters:
         cc (str): would only be 1 manager.
         bcc (list[str]): employees to recieve email with shared manager.
         pay_period (str): info for employee to know what pay period.
-        body (list[str]): for me, to inform employee how many error there were.
+        body (str): for me, to inform employee how many error there were.
     Returns:
         None
     Raises:
         ImportError: if win32com isn't installed.
         Execption as e: if outlook fails to launch.
     """
+    if not all(
+        [
+            isinstance(cc, str),
+            ('@' in cc),
+            isinstance(bcc, str),
+            (len(bcc) > 0 and '@' in bcc[0]),
+            isinstance(pay_period, str),
+            isinstance(body, str)
+        ]
+    ):
+        raise TypeError(
+            f"""Bad argument types.
+                cc: {type(cc)}
+                bcc: {type(bcc)}
+                BW: {type(pay_period)}
+                body: {type(body)}
+            """
+        )
     try:
         outlook = win32.Dispatch("outlook.application")
     except Exception as e:
@@ -33,12 +51,12 @@ def email(cc: str, bcc: list[str], pay_period: str, body: list[str]) -> None:
     mail = outlook.CreateItem(0)
     mail.CC = cc
     mail.BCC = "; ".join(bcc)
-    mail.Subject = f"Pay Period of timesheet: {pay_period} & number of Errors: {len(body)}"
+    mail.Subject = f"Pay Period of timesheet: {pay_period}"
     mail.Body = \
 f"""\
 Hi,
 
-Error: {', '.join(body)}
+Error: {body}
 
 If you are receiving this email, it means that {len(bcc)} of your employees have some issue related to their timesheet: {pay_period}.
 They are BCC'd on this email, so there is no action needed on your part.
@@ -49,4 +67,15 @@ They are BCC'd on this email, so there is no action needed on your part.
         mail.Send()
 
 if __name__ == "__main__":
-    email(cc="manager@mail.com",bcc=["employee1@mail.com","employee2@mail.com"],pay_period="BW??",body=["Errors1","Errors2"])
+    email(
+        cc="manager@mail.com",
+        bcc=[
+            "employee1@mail.com",
+            "employee2@mail.com"
+        ],
+        pay_period="BW??",
+        body=[
+            "Errors1",
+            "Errors2"
+        ]
+    )
