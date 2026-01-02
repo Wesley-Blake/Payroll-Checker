@@ -40,7 +40,7 @@ if __name__ == "__main__":
     test_path = Path.cwd() / "data_examples" / "NotStarted.csv"
     test = data(test_path)
     if test is None:
-        sys.exit(f"Test variable is None, not DataFrame.")
+        sys.exit("Test variable is None, not DataFrame.")
     else:
         assert isinstance(test, DataFrame)
         assert not test.empty
