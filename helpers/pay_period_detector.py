@@ -7,35 +7,37 @@ Dependencies:
     None
 """
 #from math import ceil
+import sys
 from datetime import date, timedelta
+from pathlib import Path
 
-def pay_period_detector(y:int, m:int , d: int) -> str:
-    """
-    Parameters:
-        y (int): year input as YYYY.
-        m (int): month as MM.
-        d (int): as DD.
-    Returns:
-        str: BW(some number)
-    Raises:
-        TypeError: if y,m, or d aren't ints
-    """
-    # Check: type of y, m, and d
-    if not(isinstance(y, int) and isinstance(m, int) and isinstance(d, int)): #type: ignore
-        raise TypeError(f"y,m,d not int got, y:{type(y)}, m:{type(m)}, d:{type(d)}")
+def pay_period_detector(file: Path) -> str:
+    DOCUMENTS = Path.home() / "Documents"
+    CURRENT_DATE = date.today()
+    if not file.exists():
+        with open(DOCUMENTS / file, "w", encoding='utf-8') as file:
+            iso_format = input("Last day of Pay period: YYYY-MM-DD ")
+            try:
+                pay_period = date.fromisoformat(iso_format)
+            except Exception as e:
+                sys.exit(
+                    f"""
+                    Time Error
+                    {__name__}
+                    {e}
+                    """
+                )
+            DELTA = timedelta(days=14)
+            while True:
+                #file.write_text(pay_period.isoformat())
+                file.write(pay_period.isoformat()+"\n")
+                pay_period += DELTA
+                if pay_period.year > CURRENT_DATE.year:
+                    break
+    with open(DOCUMENTS / file, "r", encoding='utf-8') as file:
+        date_str = file.readline().strip()
+        print(date_str)
 
-    first_pay_period = date(y,m,d)
-    current_day = date.today()
-    current_pay_period = 0
-
-    # Calculate current or future pay period
-    #difference = current_day - first_date_of_pay_period
-    #current_pay_period = ceil(difference.days / 14)
-    #return "BW" + str(1 if current_pay_period < 1 else current_pay_period)
-    while (first_pay_period < current_day):
-        first_pay_period = current_day + timedelta(days=14)
-        current_pay_period += 1
-    
-    return "BW" + str(current_pay_period if current_pay_period > 0 else 1)
-
-# Hard to test, only predicts current pay period based on today.
+if __name__ == "__main__":
+    DOCUMENTS = Path.home() / "Documents"
+    pay_period_detector(DOCUMENTS / "pay_period_calendar.txt")
