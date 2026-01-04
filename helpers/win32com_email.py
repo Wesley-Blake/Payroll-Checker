@@ -1,10 +1,14 @@
 """
-email module for outlook
+win32com_email.py
 
-This module simplifies the email process for my payroll_checker package.
+Utilities to send notifications via Outlook using the pywin32/win32com
+automation interface.
+
+This module provides a small wrapper to build and send emails (or display
+them interactively) using Outlook.
 
 Dependencies:
-    - Requres win32come
+    - pywin32 (win32com)
 """
 import sys
 try:
@@ -14,16 +18,20 @@ except ImportError:
 
 def email(cc: str, bcc: list[str], pay_period: str, body: str) -> None:
     """
+    Send an email via Outlook to a manager with employees BCC'd.
+
     Parameters:
-        cc (str): would only be 1 manager.
-        bcc (list[str]): employees to recieve email with shared manager.
-        pay_period (str): info for employee to know what pay period.
-        body (str): for me, to inform employee how many error there were.
+        cc (str): Manager email address (single address).
+        bcc (list[str]): List of employee email addresses to BCC.
+        pay_period (str): Human-readable pay period text included in subject.
+        body (str): Message body describing the issue for the employees.
+
     Returns:
         None
+
     Raises:
-        ImportError: if win32com isn't installed.
-        Execption as e: if outlook fails to launch.
+        ImportError: If the win32com client is not available.
+        Exception: If Outlook fails to start or send the message.
     """
     if not all(
         [
@@ -74,8 +82,5 @@ if __name__ == "__main__":
             "employee2@mail.com"
         ],
         pay_period="BW??",
-        body=[
-            "Errors1",
-            "Errors2"
-        ]
+        body="Errors",
     )

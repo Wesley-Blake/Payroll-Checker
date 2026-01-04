@@ -1,11 +1,15 @@
 """
-Main.py (temp until cli or tui built)
+main.py
 
-This is a testing ground for my payroll checking refector. It is mostly to follow a better standard.
+A small entrypoint used for manual testing of the Payroll Checker utilities
+while a CLI or TUI is being developed.
+
+This script demonstrates discovery of recent report files and invoking the
+helper modules to build and send notifications.
 
 Dependencies:
-    - Requires pandas
-    - Requires Helpers (my own package)
+    - pandas
+    - helpers (local package)
 """
 import os
 import sys

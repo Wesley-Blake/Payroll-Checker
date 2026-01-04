@@ -11,14 +11,20 @@ from datetime import date, timedelta
 
 def pay_period_detector(y:int, m:int , d: int) -> str:
     """
+    Determine the biweekly pay period index (BW) relative to a reference
+    start date.
+
     Parameters:
-        y (int): year input as YYYY.
-        m (int): month as MM.
-        d (int): as DD.
+        y (int): Year as YYYY.
+        m (int): Month as MM.
+        d (int): Day as DD.
+
     Returns:
-        str: BW(some number)
+        str: A string of the form "BW<n>", where <n> is the pay period
+        number (1-based).
+
     Raises:
-        TypeError: if y,m, or d aren't ints
+        TypeError: If `y`, `m`, or `d` are not integers.
     """
     # Check: type of y, m, and d
     if not(isinstance(y, int) and isinstance(m, int) and isinstance(d, int)): #type: ignore

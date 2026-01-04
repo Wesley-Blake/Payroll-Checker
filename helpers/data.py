@@ -1,10 +1,13 @@
 """
 data.py
 
-This module takes a .csv file and returns a DataFrame.
+Helpers to load CSV files into pandas DataFrames.
+
+This module exposes a single `data()` function that reads a CSV file from a
+Path and returns a pandas DataFrame for downstream processing.
 
 Dependencies:
-    - Requires pandas
+    - pandas
 """
 from pathlib import Path
 import sys
@@ -16,14 +19,17 @@ except ImportError:
 
 def data(file: Path) -> DataFrame | None:
     """
+    Read a CSV file into a pandas DataFrame.
+
     Parameters:
-        file (Path): file should be .csv
+        file (Path): Path to a CSV file to load.
+
     Returns:
-        DataFrame: a dataframe to use for other functions.
+        DataFrame: The loaded pandas DataFrame.
+
     Raises:
-        ImportError: if pandas isn't isntalled.
-        TypeError: if file isn't a Path
-        FileNotFoundError: if the file isn't found.
+        TypeError: If `file` is not a pathlib.Path.
+        FileNotFoundError: If the file does not exist or is not a file.
     """
     if not isinstance(file, Path): # type: ignore
         raise TypeError(f"file should be Path, got {type(file)}\n{__file__}")

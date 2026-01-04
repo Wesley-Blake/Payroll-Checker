@@ -1,3 +1,14 @@
+"""
+over_eight_hours.py
+
+Utilities to detect employees who have worked more than the expected daily
+hours threshold (regular vs union rules) and group them by manager for
+notification purposes.
+
+Dependencies:
+    - pandas
+"""
+
 import sys
 try:
     from pandas import DataFrame
@@ -6,6 +17,22 @@ except ImportError:
     sys.exit(f" Failed to import the packages. {__file__}")
 
 def over_eight_hours(df: DataFrame, email_df: DataFrame) -> dict[str, list[str]] | None:
+    """
+    Identify employees who exceeded daily hour thresholds and group them by
+    their supervisor's email.
+
+    Parameters:
+        df (DataFrame): Timesheet/detail rows containing employee hours and codes.
+        email_df (DataFrame): Employee contact data containing supervisor emails.
+
+    Returns:
+        dict[str, list[str]] | None: Mapping of supervisor email to a list of
+        employee emails who exceeded thresholds. Returns ``None`` if no
+        employees exceed the thresholds.
+
+    Raises:
+        TypeError: If `df` or `email_df` are not pandas DataFrames.
+    """
     if not isinstance(df, DataFrame): #type:ignore
         raise TypeError(f"df should be a DataFrame, got {type(df)}")
     if not isinstance(email_df, DataFrame): #type:ignore

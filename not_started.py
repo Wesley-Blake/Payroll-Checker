@@ -1,10 +1,13 @@
 """
 not_started.py
 
-This module is meant to detect employees that haven't started their timesheets.
+Utilities to detect employees who have not started their timesheets.
+
+This module provides a function to build a mapping of manager emails to the
+employee emails of direct reports who have not started their timesheets.
 
 Dependencies:
-    - Requires pandas.
+    - pandas
 """
 
 import sys
@@ -18,13 +21,20 @@ except ImportError:
 
 def not_started_list(df: DataFrame) -> dict[str, list[str]] | None:
     """
+    Build a mapping of manager email -> list of employee emails who have not
+    started their timesheets.
+
     Parameters:
-        df (DataFrame): DataFrame of employees who haven't started their timesheets.
+        df (DataFrame): DataFrame containing the timesheet report rows.
+
     Returns:
-        dict[str, list[str]]: or None if all employees started.
+        dict[str, list[str]] | None: Mapping of manager email to employee email
+        list. Returns ``None`` if no matching employees are found.
+
     Raises:
-        TypeError: if df isn't a DataFrame.
-        ValueError: if the columns for emails aren't strs or emails.
+        TypeError: If `df` is not a pandas DataFrame.
+        ValueError: If the expected email fields are missing or not valid
+        email strings.
     """
     # Check: is dataframe?
     if not isinstance(df, DataFrame): # type: ignore
