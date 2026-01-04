@@ -23,6 +23,12 @@ try:
 except ImportError:
     sys.exit("Failed to import helper funcitons.")
 
+# NOTE: This script uses interactive input and ad-hoc file discovery in
+# NOTE: the user's Downloads folder. Consider adding an `argparse`-based
+# NOTE: CLI for reproducibility and testability, and avoid calling
+# NOTE: `sys.exit()` from imported helpers — let the application entry
+# NOTE: point handle process termination.
+
 if __name__ == "__main__":
     # Initial paths
     DOWNLOADS = Path.home() / "Downloads"

@@ -19,6 +19,12 @@ except ImportError:
             {__file__}"
     )
 
+# NOTE: Avoid relying on hard-coded column indices (e.g. headers[16],
+# NOTE: headers[18]). Prefer using explicit column names or a small schema
+# NOTE: mapping at the top of the module so callers and maintainers know the
+# NOTE: expected CSV layout. Consider returning an empty dict instead of
+# NOTE: `None` for "no results" to keep return types consistent.
+
 def not_started_list(df: DataFrame) -> dict[str, list[str]] | None:
     """
     Build a mapping of manager email -> list of employee emails who have not

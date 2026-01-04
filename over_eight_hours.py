@@ -16,6 +16,14 @@ try:
 except ImportError:
     sys.exit(f" Failed to import the packages. {__file__}")
 
+# NOTE: Move per-file column lists (WHITE_LIST, EMAIL_WHITE_LIST) and
+# NOTE: numeric thresholds (7.5, 8) to module-level constants, and document
+# NOTE: the expected column names. Avoid indexing columns by position;
+# NOTE: use column names or a schema translation layer. Also consider
+# NOTE: returning an empty mapping instead of `None` when there are no
+# NOTE: matches, and reduce use of `# type: ignore` by narrowing code paths
+# NOTE: or using pandas typing support.
+
 def over_eight_hours(df: DataFrame, email_df: DataFrame) -> dict[str, list[str]] | None:
     """
     Identify employees who exceeded daily hour thresholds and group them by

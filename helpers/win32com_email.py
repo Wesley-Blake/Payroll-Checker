@@ -16,6 +16,13 @@ try:
 except ImportError:
     sys.exit(f"Failed to import the packages. {__file__}")
 
+# NOTE: Validation bug - the code currently uses `isinstance(bcc, str)` when
+# NOTE: `bcc` should be a list of strings. Validate the container type and
+# NOTE: each email address. Separate message construction from sending so
+# NOTE: message text can be unit-tested without Outlook. Avoid calling
+# NOTE: `sys.exit()` inside library functions; raise exceptions so callers
+# NOTE: can decide how to recover or exit.
+
 def email(cc: str, bcc: list[str], pay_period: str, body: str) -> None:
     """
     Send an email via Outlook to a manager with employees BCC'd.

@@ -9,6 +9,11 @@ Dependencies:
 #from math import ceil
 from datetime import date, timedelta
 
+# NOTE: The existing loop updates `first_pay_period` to `current_day + 14`
+# NOTE: which does not advance from the original reference date. Prefer
+# NOTE: computing the difference in days and using integer division by 14
+# NOTE: or incrementing the reference date by 14 days each iteration.
+
 def pay_period_detector(y:int, m:int , d: int) -> str:
     """
     Determine the biweekly pay period index (BW) relative to a reference

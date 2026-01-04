@@ -17,6 +17,12 @@ try:
 except ImportError:
     sys.exit(f"Failed to import the packages. {__file__}")
 
+# NOTE: `pandas.read_csv` accepts a Path directly, so it's simpler and more
+# NOTE: robust to call `pandas.read_csv(file)` rather than opening the file
+# NOTE: yourself and passing a file object. Also consider raising errors
+# NOTE: from library code instead of calling `sys.exit()` so callers can
+# NOTE: handle failures.
+
 def data(file: Path) -> DataFrame | None:
     """
     Read a CSV file into a pandas DataFrame.
