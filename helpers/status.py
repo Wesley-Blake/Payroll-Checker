@@ -6,12 +6,13 @@ from helpers.support import *
 def not_started_list(file: DataFrame) -> list[str]:
     logger = setup_logger("PayRollChecker.log")
     white_list = ["EmplID", "job_ecls", "EmplEmail", "ApprEmail"]
-    file = file[white_list]
-    final_df = file[
-        (file["job_ecls"] != "SS") &
-        (file["job_ecls"] != "SN") &
-        (file["job_ecls"] != "WW")
-    ]
+    #file = file[white_list]
+    final_df = file[white_list]
+    #final_df = file[
+    #    (file["job_ecls"] != "SS") &
+    #    (file["job_ecls"] != "SN") &
+    #    (file["job_ecls"] != "WW")
+    #]
     if final_df.empty:
         logger.info("All employees started.")
         return []
