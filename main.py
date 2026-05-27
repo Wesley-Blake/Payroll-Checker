@@ -74,7 +74,7 @@ else:
             result_holiday_type,
             PAY_PERIOD,
             HOLIDAY_TYPE_TEMPLATE.substitute(
-                list_o_holidays=list_o_holidays
+                list_o_holidays=', '.join(list_o_holidays)
             ) + \
             TIMESHEET_LINK
         )
@@ -84,7 +84,7 @@ else:
             result_holiday_date,
             PAY_PERIOD,
             HOLIDAY_DATE_TEMPLATE.substitute(
-                list_o_holidays=list_o_holidays
+                list_o_holidays=', '.join(list_o_holidays)
             ) + \
             TIMESHEET_LINK
         )

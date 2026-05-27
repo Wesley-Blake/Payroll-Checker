@@ -13,7 +13,7 @@ Hi,
 
 Friendly Reminder: Holiday / Holiday Worked was detected.
 Holiday and or Holiday Worked was reported on the incorrect day.
-${list_o_holidays=}
+${list_o_holidays}
 """
 )
 
@@ -22,7 +22,7 @@ Hi,
 
 Friendly Reminder: Holiday / Holiday Worked was detected.
 Holiday Pay doesn't reflect on the holiday.
-${list_o_holidays=}
+${list_o_holidays}
 """
 )
 
