@@ -1,22 +1,29 @@
 from pathlib import Path
-import logging
+from datetime import datetime
+#import logging
 import pandas
 from pandas import DataFrame
 import validators
 import win32com.client as win32
 
 
-#class EmailList(dict):
-#    def __setitem__(self, key, value):
-#        if not validators.email(key):
-#            raise ValueError(f"Invalid email address: {key}")
-#        if not isinstance(value, list) or not all(validators.email(email) for email in value):
-#            raise ValueError(f"Value must be a list of valid email addresses: {value}")
-#        super().__setitem__(key, value)
+def holidays_input() -> list[str]:
+    holiday_list = []
+    while True:
+        holiday = input("Enter 1 holiday: [%YYYY-%mm-%dd] ")
+        try:
+            date = datetime.strptime(holiday, "%Y-%m-%d").date().isoformat()
+            holiday_list.append(date)
+        except Exception:
+            raise ValueError(f"Invalid date format: {holiday}. Expected format: YYYY-MM-DD.")
+        finally:
+            if holiday:
+                return holiday_list
+
 def make_list(check: list) -> list:
-    if not isinstance(check, list): raise ValueError
+    assert isinstance(check, list), "Input must be a list"
     for i in check:
-        if not validators.email(i): raise ValueError
+        assert validators.email(i), f"Invalid email format: {i}"
     else:
         return check
 
@@ -28,62 +35,52 @@ def pay_period_check() -> int:
         if correction.lower() == 'n': continue
         if result in pay_periods: return int(result)
 
-def loading_bar(length, index=1, prefix = '') -> callable:
-    print()
-    def make_bar(length=length, index=index, prefix=prefix) -> str:
-        BAR_LENGTH = 30
-        if len(prefix) > 0: print(prefix)
-        while index <= length:
-            block = int(BAR_LENGTH * index / length)
-            bar = '=' * block + '-' * (BAR_LENGTH - block)
-            yield f'\r|{bar}| {index} / {length} emails sent.'
-            index += 1
-    g = make_bar()
-    return lambda: print(next(g), end='', flush=True)
+#def loading_bar(length, index=1, prefix = '') -> callable:
+#    print()
+#    def make_bar(length=length, index=index, prefix=prefix) -> str:
+#        BAR_LENGTH = 30
+#        if len(prefix) > 0: print(prefix)
+#        while index <= length:
+#            block = int(BAR_LENGTH * index / length)
+#            bar = '=' * block + '-' * (BAR_LENGTH - block)
+#            yield f'\r|{bar}| {index} / {length} emails sent.'
+#            index += 1
+#    g = make_bar()
+#    return lambda: print(next(g), end='', flush=True)
 
-def setup_logger(name: str) -> object:
-    logger = logging.getLogger(name)
-    logger.setLevel(logging.DEBUG)
+#def setup_logger(name: str) -> object:
+#    logger = logging.getLogger(name)
+#    logger.setLevel(logging.DEBUG)
+#    file_handler = logging.FileHandler(f"{name}")
+#    file_handler.setLevel(logging.DEBUG)
+#    formatter = logging.Formatter('%(asctime)s - %(funcName)s - %(levelname)s - %(message)s')
+#    file_handler.setFormatter(formatter)
+#    logger.addHandler(file_handler)
+#    return logger
 
-    file_handler = logging.FileHandler(f"{name}")
-    file_handler.setLevel(logging.DEBUG)
+def collect_file(keyword: str) -> Path:
+    directory = Path.home() / "Downloads"
+    assert directory.is_dir(), f"{directory} is not a valid directory."
+    latest_file = None
+    for file in directory.iterdir():
+        if keyword in file.name:
+            if latest_file is None or file.stat().st_ctime > latest_file.stat().st_ctime:
+                print(f"Found file: {file.name}")
+                latest_file = file
+    assert latest_file is not None, f"No file containing '{keyword}' found in {directory}."
+    return latest_file
 
-    formatter = logging.Formatter('%(asctime)s - %(funcName)s - %(levelname)s - %(message)s')
-    file_handler.setFormatter(formatter)
-
-    logger.addHandler(file_handler)
-
-    return logger
-
-def make_df(file: Path, pay_period: int) -> DataFrame:
-    if not isinstance(file, Path):
-        raise TypeError(f"Bad file input type {type(file)=}")
+def make_df(file: Path, pay_period: int, skip = False) -> DataFrame:
+    assert isinstance(file, Path), f"Bad file input type {type(file)=}"
     df = pandas.read_csv(file)
     headers = df.columns
+    if skip: return df
     for header in headers:
         if "pay" in header.lower() and "no" in header.lower():
             if df[header].iloc[0] == pay_period:
                 return df
     else:
-        raise ValueError(f"Pay period {pay_period} not found in file {file.name}")
-
-# NOTE: pass logger?
-#def return_dict(merged_df: DataFrame) -> EmailList[str:list[str]]:
-#    logger = setup_logger("PayRollChecker.log")
-#    headers = merged_df.columns
-#    if "appr" not in headers[-1].lower() and "super" not in headers[-1].lower():
-#        raise ValueError(f"Last column must be manager email, found {headers[-1]}")
-#    if "empl" not in headers[-2].lower() and "pacific" not in headers[-2].lower():
-#        raise ValueError(f"Last column must be employee email, found {headers[-2]}")
-#    result = EmailList()
-#    manager_emails: list[str] = merged_df[headers[-1]].unique().tolist()
-#    for manager_email in manager_emails:
-#        result.update({manager_email: []})
-#        employee_email_df = merged_df[merged_df[headers[-1]] == manager_email][headers[-2]]
-#        employee_email_list = employee_email_df.unique().tolist()
-#        result[manager_email] += employee_email_list
-#    logger.info("Finished Successfully.")
-#    return result
+        print(f"Warning: No matching pay period found in {file}. Expected pay period: {pay_period}.")
 
 class winEmail:
     def __init__(self):
@@ -97,7 +94,7 @@ class winEmail:
             #mail.CC = cc
             mail.BCC = '; '.join(bcc)
             mail.Subject = f'Pay Period: BW{pay_period}'
-            with open('secret.txt', 'r') as file:
+            with open('Payroll-Checker\\secret.txt', 'r') as file:
                 attachment = Path(file.readline().strip())
             if attachment.is_file():
                 mail.Attachments.Add(str(attachment))

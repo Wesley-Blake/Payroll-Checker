@@ -1,75 +1,41 @@
-import os
 from pathlib import Path
-import pandas
-from helpers.charter import *
-from helpers.holiday import *
-from helpers.overlapping_hours import *
-from helpers.overtime import *
+from helpers.hoursBreakDown import *
+from helpers.overlapping import *
 from helpers.status import *
 from helpers.support import *
 from helpers.templates import *
 
 
-# implement asyncio
-# dict[dfName: df]
 with open("Payroll-Checker\\secret.txt", "r") as f:
     _ = f.readline().strip()
     TIMESHEET_LINK = f.readline().strip()
-WORKING_DIR = Path.cwd() / 'Payroll-Checker'
-if WORKING_DIR.is_dir():
-    os.chdir(WORKING_DIR)
-else:
-    raise FileNotFoundError
-DOWNLOADS = Path.home() / "Downloads"
-PAY_PERIOD = pay_period_check()
-NOT_STARTED = ""
-OVERTIME = ""
-EMAIL = ""
-OVERLAPPING = ""
-PENDING = ""
-for file in os.scandir(DOWNLOADS):
-    # implement date detection for files instead of relying on name.
-    if "not_yet_started_WTE" in file.name and file.name > NOT_STARTED:
-        NOT_STARTED = file.name
-    if "ts_break_down" in file.name and file.name > OVERTIME:
-        OVERTIME = file.name
-    elif "Active" in file.name and file.name > EMAIL:
-        EMAIL = file.name
-    elif "Overlapping_Hours" in file.name and file.name > OVERLAPPING:
-        OVERLAPPING = file.name
-    elif "Time_Sheet_Status" in file.name and file.name > PENDING:
-        PENDING = file.name
-path_not_started =  make_df(DOWNLOADS / NOT_STARTED, PAY_PERIOD)
-path_overtime = make_df(DOWNLOADS / OVERTIME, PAY_PERIOD)
-path_email = pandas.read_csv(DOWNLOADS / EMAIL)
-path_overlapping = make_df(DOWNLOADS / OVERLAPPING, PAY_PERIOD)
-path_pending = make_df(DOWNLOADS / PENDING, PAY_PERIOD)
-# end implement asyncio
 
-# Setup winemailer.send_email class
+PAY_PERIOD = pay_period_check()
+
+hours_breakdown = hours_breakdown(
+    collect_file("ts_break_down"),
+    collect_file("Active_Empls"),
+    PAY_PERIOD
+)
+overlapping_hours = overlapping_hours(
+    collect_file("Overlapping"),
+    PAY_PERIOD
+)
+not_started = notStarted(
+    collect_file("not_yet_started_WTE"),
+    PAY_PERIOD
+)
+pending = pending(
+    collect_file("Comments"),
+    PAY_PERIOD
+)
 emailer = winEmail()
 
 # Holiday Detections
-if input("Is there a holiday? [Y/n]") == "n":
-    result_no_holiday = no_holiday_detection(path_overtime, path_email)
-    if len(result_no_holiday) > 0:
-        emailer.send_email(
-            result_no_holiday,
-            PAY_PERIOD,
-            NO_HOLIDAY_TEMPLATE + \
-            TIMESHEET_LINK
-        )
-else:
-    list_o_holidays = holidays_input()
-    if len(list_o_holidays) == 0:
-        SystemExit(f"{list_o_holidays=}\n is empty.")
-
-    result_holiday_type = holiday_detection_type(
-        path_overtime,
-        path_email,
+if list_o_holidays := holidays_input():
+    if result_holiday_type := hours_breakdown.holiday_detection_type(
         list_o_holidays
-    )
-    if len(result_holiday_type) > 0:
+    ):
         emailer.send_email(
             result_holiday_type,
             PAY_PERIOD,
@@ -78,8 +44,9 @@ else:
             ) + \
             TIMESHEET_LINK
         )
-    result_holiday_date = holiday_detection_date(path_overtime, path_email, list_o_holidays)
-    if len(result_holiday_date) > 0:
+    if result_holiday_date := hours_breakdown.holiday_detection_date(
+        list_o_holidays
+    ):
         emailer.send_email(
             result_holiday_date,
             PAY_PERIOD,
@@ -88,21 +55,17 @@ else:
             ) + \
             TIMESHEET_LINK
         )
-
-# Not Started Check
-result_not_started = not_started_list(path_not_started)
-length = len(result_not_started)
-if length > 0:
-    emailer.send_email(
-        result_not_started,
-        PAY_PERIOD,
-        NOT_STARTED_TEMPLATE + \
-        TIMESHEET_LINK
-    )
+else:
+    if result_no_holiday := hours_breakdown.no_holiday_detection():
+        emailer.send_email(
+            result_no_holiday,
+            PAY_PERIOD,
+            NO_HOLIDAY_TEMPLATE + \
+            TIMESHEET_LINK
+        )
 
 # Overtime Check
-result_overtime = over_eight_hours(path_overtime, path_email)
-if len(result_overtime) > 0:
+if result_overtime := hours_breakdown.over_eight_hours():
     emailer.send_email(
         result_overtime,
         PAY_PERIOD,
@@ -111,8 +74,7 @@ if len(result_overtime) > 0:
     )
 
 # Over twelve hours in a day Overtime
-result_over_twelve = over_twelve_hours(path_overtime, path_email)
-if len(result_over_twelve) > 0:
+if result_over_twelve := hours_breakdown.over_twelve_hours():
     emailer.send_email(
         result_over_twelve,
         PAY_PERIOD,
@@ -121,8 +83,7 @@ if len(result_over_twelve) > 0:
     )
 
 # Overlapping Check
-result_overlapping = overlapping_hours(path_overlapping)
-if len(result_overlapping) > 0:
+if result_overlapping := overlapping_hours.overlapping_list():
     emailer.send_email(
         result_overlapping,
         PAY_PERIOD,
@@ -130,21 +91,29 @@ if len(result_overlapping) > 0:
         TIMESHEET_LINK
     )
 
+# Not Started Check
+if result_not_started := not_started.not_started_list():
+    emailer.send_email(
+        result_not_started,
+        PAY_PERIOD,
+        NOT_STARTED_TEMPLATE + \
+        TIMESHEET_LINK
+    )
+
 # Pending Check
-result_pending = pending(path_pending)
-if len(result_pending) > 0:
+if result_pending := pending.pending_list():
     emailer.send_email(
         result_pending,
         PAY_PERIOD,
         PENDING_TEMPLATE
     )
-plot_timesheet_statuses(
-    path_pending,
+
+downloads = Path.home() / "Downloads"
+pending.plot_timesheet_statuses(
     title=f"{PAY_PERIOD} Timesheet Status Distribution",
-    save_path=DOWNLOADS / "Timesheet_Status_Distribution.png"
+    save_path=downloads / "Timesheet_Status_Distribution.png"
 )
-plot_timesheet_statuses_by_job_ecls(
-    path_pending,
+pending.plot_timesheet_statuses_by_job_ecls(
     title=f"{PAY_PERIOD} Timesheet Status Distribution",
-    save_path=DOWNLOADS / "Timesheet_Status_Distribution_by_Job_Ecls.png"
+    save_path=downloads / "Timesheet_Status_Distribution_by_Job_Ecls.png"
 )

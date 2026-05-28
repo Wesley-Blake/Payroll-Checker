@@ -1,15 +1,12 @@
 from pathlib import Path
 import validators
 import pandas as pd
-from helpers.logger_config import setup_logger
 
 def weekend_overtime(file: Path, file_email: Path) -> dict:
-    logger = setup_logger("PayRollChecker.log")
     if file.is_file() and file_email.is_file():
         df = pd.read_csv(file)
         email_df = pd.read_csv(file_email)
     else:
-        logger.warning("One or both files do not exist.")
         return {}
 
     WHITE_LIST = ["ts_payno", "Empl_ID", "JobECLS", "earn_code", "ts_entry_date", "appr_id", "earning_hours"]
@@ -77,11 +74,10 @@ def weekend_overtime(file: Path, file_email: Path) -> dict:
 
     for manager, employee in result.items():
         if not validators.email(manager):
-            logger.debug("Manager email isn't email.")
+            pass
             return {}
         for email in employee:
             if not validators.email(email):
-                logger.debug("Employee email isn't email.")
+                pass
                 return {}
-    logger.info("Finished Successfully.")
     return result

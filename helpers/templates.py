@@ -8,7 +8,7 @@ Friendly Reminder: Holiday / Holiday Worked was detected.
 There wasn't a holiday this pay period.
 """
 
-HOLIDAY_TYPE_TEMPLATE = Template("""\
+HOLIDAY_DATE_TEMPLATE = Template("""\
 Hi,
 
 Friendly Reminder: Holiday / Holiday Worked was detected.
@@ -17,7 +17,7 @@ ${list_o_holidays}
 """
 )
 
-HOLIDAY_DATE_TEMPLATE = Template("""\
+HOLIDAY_TYPE_TEMPLATE = Template("""\
 Hi,
 
 Friendly Reminder: Holiday / Holiday Worked was detected.
