@@ -30,6 +30,7 @@ NOT_STARTED_TEMPLATE = """\
 Hi,
 
 Friendly Reminder: Timesheet Not Started
+If you haven't worked, then you wouldn't need to do anyhting, but if you have worked, please start your timesheet and fill in your hours for the pay period.
 
 """
 
