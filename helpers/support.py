@@ -17,7 +17,9 @@ def holidays_input() -> list[str]:
         except Exception:
             raise ValueError(f"Invalid date format: {holiday}. Expected format: YYYY-MM-DD.")
         finally:
-            if holiday:
+            if holiday: continue
+            print(f"Holidays: {holiday_list}")
+            if (input("Is this correct? [Y/n] ").lower() or 'y') == 'y':
                 return holiday_list
 
 def make_list(check: list) -> list:
@@ -31,8 +33,8 @@ def pay_period_check() -> int:
     pay_periods = [str(x) for x in range(1,27)]
     while True:
         result = input("What pay period is it? ")
-        correction = input(f"{result} is this correct? [Y/n] ")
-        if correction.lower() == 'n': continue
+        if (input(f"{result} is this correct? [Y/n] ").lower() or 'y') != 'y':
+            continue
         if result in pay_periods: return int(result)
 
 #def loading_bar(length, index=1, prefix = '') -> callable:
