@@ -21,6 +21,9 @@ def holidays_input() -> list[str]:
             print(f"Holidays: {holiday_list}")
             if (input("Is this correct? [Y/n] ").lower() or 'y') == 'y':
                 return holiday_list
+            else:
+                holiday_list.clear()
+                continue
 
 def make_list(check: list) -> list:
     assert isinstance(check, list), "Input must be a list"
