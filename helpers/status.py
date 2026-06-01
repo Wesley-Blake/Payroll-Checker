@@ -9,6 +9,7 @@ except:
 
 
 class notStarted:
+
     def __init__(self, file: Path, pay_period: int):
         self.df = make_df(file, pay_period)
         self.df = self.df[
@@ -19,15 +20,18 @@ class notStarted:
                 "ApprEmail"
             ]
         ].drop_duplicates()
+
     def not_started_list(self) -> list[str]:
         if self.df.empty:
             return []
         return make_list(self.df["EmplEmail"].unique().tolist())
 
 class pending:
+
     def __init__(self, file: Path, pay_period: int):
         self.df = make_df(file, pay_period)
         # TODO: final order and drop duplicates.
+
     def pending_list(self) -> list[str]:
         final_df = self.df[self.df["ts_Status"] == "Pending"]
         if final_df.empty:
@@ -35,7 +39,12 @@ class pending:
         return make_list(final_df["ApprEmail"].unique().tolist())
     def zero_hours_list(self) -> list[str]:
         pass
-    def plot_timesheet_statuses(self, title='Timesheet Status', save_path='timesheet_status_distribution.png'):
+
+    def plot_timesheet_statuses(
+        self,
+        title='Timesheet Status',
+        save_path='timesheet_status_distribution.png',
+    ):
         plt.style.use('dark_background')
         year = date.today().year
         white_list = ['EmplID', 'job_ecls', 'ts_Status']
@@ -58,8 +67,13 @@ class pending:
         plt.tight_layout()
         plt.savefig(save_path)
 
-    def plot_timesheet_statuses_by_job_ecls(self, title='Timesheet Status by Job Class', save_path='timesheet_status_distribution.png'):
+    def plot_timesheet_statuses_by_job_ecls(
+        self,
+        title='Timesheet Status by Job Class',
+        save_path='timesheet_status_distribution.png',
+    ):
         plt.style.use('dark_background')
+
         year = date.today().year
         white_list = ['EmplID', 'job_ecls', 'ts_Status']
         df = self.df[white_list].drop_duplicates()

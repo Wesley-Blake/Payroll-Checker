@@ -2,14 +2,25 @@ from pathlib import Path
 import validators
 import pandas as pd
 
-def weekend_overtime(file: Path, file_email: Path) -> dict:
+def weekend_overtime(
+    file: Path,
+    file_email: Path,
+) -> dict:
     if file.is_file() and file_email.is_file():
         df = pd.read_csv(file)
         email_df = pd.read_csv(file_email)
     else:
         return {}
 
-    WHITE_LIST = ["ts_payno", "Empl_ID", "JobECLS", "earn_code", "ts_entry_date", "appr_id", "earning_hours"]
+    WHITE_LIST = [
+        "ts_payno",
+        "Empl_ID",
+        "JobECLS",
+        "earn_code",
+        "ts_entry_date",
+        "appr_id",
+        "earning_hours",
+    ]
     df = df[WHITE_LIST]
 
     # Remove people that didn't work the weekend.
@@ -40,11 +51,20 @@ def weekend_overtime(file: Path, file_email: Path) -> dict:
     final_df = filtered_df[(union | non_union)]
     # Everything earlier than first Saturday.
     first_sat = (
-        final_df.loc[final_df['ts_entry_date'].dt.weekday.isin([5,6]), 'ts_entry_date']
+        final_df
+        .loc[
+            final_df['ts_entry_date'].dt.weekday.isin([5, 6]),
+            'ts_entry_date'
+        ]
         .min()
     )
     final_df = final_df[final_df['ts_entry_date'] < first_sat]
-    worked_weekend_df = final_df.groupby("Empl_ID")['ts_entry_date'].nunique().reset_index(name='days_worked')
+    worked_weekend_df = (
+        final_df
+        .groupby("Empl_ID")['ts_entry_date']
+        .nunique()
+        .reset_index(name='days_worked')
+    )
     target_list = worked_weekend_df["Empl_ID"]
     final_df = final_df[final_df["Empl_ID"].isin(target_list)].copy()
 
@@ -60,7 +80,7 @@ def weekend_overtime(file: Path, file_email: Path) -> dict:
         ordered_email_df,
         left_on="Empl_ID",
         right_on="EmplID",
-        how="inner"
+        how="inner",
     )
     headers = merged_df.columns
 

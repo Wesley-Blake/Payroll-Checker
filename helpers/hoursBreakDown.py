@@ -2,6 +2,7 @@ import pandas
 from pathlib import Path
 from helpers.support import *
 
+
 class hours_breakdown:
     def __init__(self, file_hours: Path, file_email: Path, pay_period: int):
         email_df = make_df(file_email, pay_period, skip=True)
@@ -45,11 +46,11 @@ class hours_breakdown:
     def over_eight_hours(self) -> list[str]:
         new_order_df = self.hours_df.groupby(
             self.hours_df.columns.tolist()[:-1],
-            as_index=False
+            as_index=False,
         )["earning_hours"].sum()
         earn_code = new_order_df["earn_code"] == "REG"
         is_uu = new_order_df["JobECLS"] == "UU"
-        is_vv = new_order_df["JobECLS"] == "UU"
+        is_vv = new_order_df["JobECLS"] == "VV"
         union = ((is_uu | is_vv) & (new_order_df["earning_hours"] > 7.5))
         non_union = (~(is_uu | is_vv) & (new_order_df["earning_hours"] > 8))
         final_df = new_order_df[earn_code & (union | non_union)]

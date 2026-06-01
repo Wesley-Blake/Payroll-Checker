@@ -12,12 +12,22 @@ def holidays_input() -> list[str]:
     while True:
         holiday = input("Enter 1 holiday: [%YYYY-%mm-%dd] ")
         try:
-            date = datetime.strptime(holiday, "%Y-%m-%d").date().isoformat()
+            date = (
+                datetime.strptime(
+                    holiday,
+                    "%Y-%m-%d",
+                )
+                .date()
+                .isoformat()
+            )
             holiday_list.append(date)
         except Exception:
-            raise ValueError(f"Invalid date format: {holiday}. Expected format: YYYY-MM-DD.")
+            raise ValueError(
+                f"Invalid date format: {holiday}. Expected format: YYYY-MM-DD."
+            )
         finally:
-            if holiday: continue
+            if holiday:
+                continue
             print(f"Holidays: {holiday_list}")
             if (input("Is this correct? [Y/n] ").lower() or 'y') == 'y':
                 return holiday_list
@@ -36,9 +46,12 @@ def pay_period_check() -> int:
     pay_periods = [str(x) for x in range(1,27)]
     while True:
         result = input("What pay period is it? ")
-        if (input(f"{result} is this correct? [Y/n] ").lower() or 'y') != 'y':
+        if (
+            input(f"{result} is this correct? [Y/n] ").lower() or 'y'
+        ) != 'y':
             continue
-        if result in pay_periods: return int(result)
+        if result in pay_periods:
+            return int(result)
 
 #def loading_bar(length, index=1, prefix = '') -> callable:
 #    print()
@@ -76,7 +89,9 @@ def collect_file(keyword: str) -> Path:
     return latest_file
 
 def make_df(file: Path, pay_period: int, skip = False) -> DataFrame:
-    assert isinstance(file, Path), f"Bad file input type {type(file)=}"
+    assert isinstance(
+        file, Path
+    ), f"Bad file input type {type(file)=}"
     df = pandas.read_csv(file)
     headers = df.columns
     if skip: return df
@@ -93,6 +108,7 @@ class winEmail:
             self.outlook = win32.Dispatch('outlook.application')
         except Exception as e:
             raise RuntimeError(f"Error initializing Outlook: {e}")
+
     def send_email(self, bcc: list[str], pay_period: str, body: str) -> None:
         try:
             mail = self.outlook.CreateItem(0)
