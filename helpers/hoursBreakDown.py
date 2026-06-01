@@ -47,21 +47,11 @@ class hours_breakdown:
             self.hours_df.columns.tolist()[:-1],
             as_index=False
         )["earning_hours"].sum()
-        earn_code = self.hours_df["earn_code"] == "REG"
-        union = (
-            (self.hours_df["JobECLS"] == "UU") &
-            (self.hours_df["earning_hours"] > 7.5)
-            ) | (
-            (self.hours_df["JobECLS"] == "VV") &
-            (self.hours_df["earning_hours"] > 7.5)
-        )
-        non_union = (
-            (self.hours_df["JobECLS"] != "UU") &
-            (self.hours_df["earning_hours"] > 8)
-            ) | (
-            (self.hours_df["JobECLS"] != "VV") &
-            (self.hours_df["earning_hours"] > 8)
-        )
+        earn_code = new_order_df["earn_code"] == "REG"
+        is_uu = new_order_df["JobECLS"] == "UU"
+        is_vv = new_order_df["JobECLS"] == "UU"
+        union = ((is_uu | is_vv) & (new_order_df["earning_hours"] > 7.5))
+        union = (~(is_uu | is_vv) & (new_order_df["earning_hours"] > 8))
         final_df = new_order_df[earn_code & (union | non_union)]
         if final_df.empty:
             return []

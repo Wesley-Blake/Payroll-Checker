@@ -2,7 +2,10 @@ from pathlib import Path
 from datetime import date
 import pandas
 import matplotlib.pyplot as plt
-from helpers.support import *
+try:
+    from helpers.support import *
+except:
+    pass
 
 
 class notStarted:
@@ -64,7 +67,7 @@ class pending:
             df
             .groupby(["ts_Status", "job_ecls"])
             .size()
-            .unstack(fill_value=-1)
+            .unstack(fill_value=0)
         )
         statuses = counts.index
         job_ecls = counts.columns
@@ -82,7 +85,7 @@ class pending:
         ax.grid(axis="y", linestyle="--", alpha=0.5)
         for container in ax.containers:
             labels = [
-                f"{int(v)}" if v > -1 else ""
+                f"{int(v)}" if v > 0 else ""
                 for v in container.datavalues
             ]
             ax.bar_label(container, labels=labels, label_type='center')
