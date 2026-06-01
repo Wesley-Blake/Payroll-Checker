@@ -8,7 +8,7 @@ Friendly Reminder: Holiday / Holiday Worked was detected.
 There wasn't a holiday this pay period.
 """
 
-HOLIDAY_TYPE_TEMPLATE = Template("""\
+HOLIDAY_DATE_TEMPLATE = Template("""\
 Hi,
 
 Friendly Reminder: Holiday / Holiday Worked was detected.
@@ -17,7 +17,7 @@ ${list_o_holidays}
 """
 )
 
-HOLIDAY_DATE_TEMPLATE = Template("""\
+HOLIDAY_TYPE_TEMPLATE = Template("""\
 Hi,
 
 Friendly Reminder: Holiday / Holiday Worked was detected.
@@ -30,6 +30,7 @@ NOT_STARTED_TEMPLATE = """\
 Hi,
 
 Friendly Reminder: Timesheet Not Started
+If you haven't worked, then you wouldn't need to do anyhting, but if you have worked, please start your timesheet and fill in your hours for the pay period.
 
 """
 
