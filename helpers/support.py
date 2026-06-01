@@ -35,12 +35,14 @@ def holidays_input() -> list[str]:
                 holiday_list.clear()
                 continue
 
+
 def make_list(check: list) -> list:
     assert isinstance(check, list), "Input must be a list"
     for i in check:
         assert validators.email(i), f"Invalid email format: {i}"
     else:
         return check
+
 
 def pay_period_check() -> int:
     pay_periods = [str(x) for x in range(1,27)]
@@ -76,17 +78,20 @@ def pay_period_check() -> int:
 #    logger.addHandler(file_handler)
 #    return logger
 
+
 def collect_file(keyword: str) -> Path:
     directory = Path.home() / "Downloads"
     assert directory.is_dir(), f"{directory} is not a valid directory."
     latest_file = None
     for file in directory.iterdir():
         if keyword in file.name:
-            if latest_file is None or file.stat().st_ctime > latest_file.stat().st_ctime:
-                print(f"Found file: {file.name}")
-                latest_file = file
+            if latest_file is None:
+                if file.stat().st_ctime > latest_file.stat().st_ctime:
+                    print(f"Found file: {file.name}")
+                    latest_file = file
     assert latest_file is not None, f"No file containing '{keyword}' found in {directory}."
     return latest_file
+
 
 def make_df(file: Path, pay_period: int, skip = False) -> DataFrame:
     assert isinstance(
@@ -101,6 +106,7 @@ def make_df(file: Path, pay_period: int, skip = False) -> DataFrame:
                 return df
     else:
         print(f"Warning: No matching pay period found in {file}. Expected pay period: {pay_period}.")
+
 
 class winEmail:
     def __init__(self):

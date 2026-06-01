@@ -78,7 +78,9 @@ class hours_breakdown:
         return make_list(final_df["PacificEmail"].unique().tolist())
 
     def holiday_detection_type(self, hol_list: list) -> list[str]:
-        filtered_df = self.hours_df[self.hours_df["ts_entry_date"].isin(hol_list)]
+        filtered_df = (
+            self.hours_df[self.hours_df["ts_entry_date"].isin(hol_list)]
+        )
         if filtered_df.empty:
             return []
         filter_holiday = (

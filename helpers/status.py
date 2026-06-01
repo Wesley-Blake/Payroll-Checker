@@ -26,6 +26,7 @@ class notStarted:
             return []
         return make_list(self.df["EmplEmail"].unique().tolist())
 
+
 class pending:
 
     def __init__(self, file: Path, pay_period: int):
