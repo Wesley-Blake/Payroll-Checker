@@ -51,7 +51,7 @@ class hours_breakdown:
         is_uu = new_order_df["JobECLS"] == "UU"
         is_vv = new_order_df["JobECLS"] == "UU"
         union = ((is_uu | is_vv) & (new_order_df["earning_hours"] > 7.5))
-        union = (~(is_uu | is_vv) & (new_order_df["earning_hours"] > 8))
+        non_union = (~(is_uu | is_vv) & (new_order_df["earning_hours"] > 8))
         final_df = new_order_df[earn_code & (union | non_union)]
         if final_df.empty:
             return []
