@@ -1,4 +1,5 @@
 from pathlib import Path
+import configparser
 from helpers.hoursBreakDown import *
 from helpers.overlapping import *
 from helpers.status import *
@@ -6,9 +7,12 @@ from helpers.support import *
 from helpers.templates import *
 
 
-with open("Payroll-Checker\\secret.txt", "r") as f:
-    _ = f.readline().strip()
-    TIMESHEET_LINK = f.readline().strip()
+config = configparser.ConfigParser()
+config.read(".env")
+TIMESHEET_LINK = config.get("Payroll-Checker", "website", fallback="")
+TIMESHEET_LINK = config["Payroll-Checker"]["website"]
+if not TIMESHEET_LINK:
+    raise ValueError(f"Missing TIMESHEET_LINK in {env_path}")
 
 PAY_PERIOD = pay_period_check()
 

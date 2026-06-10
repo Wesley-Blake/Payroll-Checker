@@ -1,6 +1,6 @@
 from pathlib import Path
 from datetime import datetime
-#import logging
+import configparser
 import pandas
 from pandas import DataFrame
 import validators
@@ -85,10 +85,12 @@ def collect_file(keyword: str) -> Path:
     latest_file = None
     for file in directory.iterdir():
         if keyword in file.name:
-            if latest_file is None:
-                if file.stat().st_ctime > latest_file.stat().st_ctime:
+            if latest_file is not None:
+                if file.stat().st_mtime > latest_file.stat().st_mtime:
                     print(f"Found file: {file.name}")
                     latest_file = file
+            else:
+                latest_file = file
     assert latest_file is not None, f"No file containing '{keyword}' found in {directory}."
     return latest_file
 
@@ -121,8 +123,9 @@ class winEmail:
             #mail.CC = cc
             mail.BCC = '; '.join(bcc)
             mail.Subject = f'Pay Period: BW{pay_period}'
-            with open('Payroll-Checker\\secret.txt', 'r') as file:
-                attachment = Path(file.readline().strip())
+            config = configparser.ConfigParser()
+            config.read('.env')
+            attachment = Path(config['Payroll-Checker']['hours_guide'])
             if attachment.is_file():
                 mail.Attachments.Add(str(attachment))
             mail.Body = body
