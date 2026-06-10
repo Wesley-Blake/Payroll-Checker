@@ -1,15 +1,18 @@
-import pandas
+import pandas as pd
 from pathlib import Path
-from helpers.support import *
+from pandas import DataFrame
+from helpers.support import make_df, make_list
 
 
 class hours_breakdown:
-    def __init__(self, file_hours: Path, file_email: Path, pay_period: int):
+    """Compute overtime and holiday detection email recipient lists."""
+
+    def __init__(self, file_hours: Path, file_email: Path, pay_period: int) -> None:
         email_df = make_df(file_email, pay_period, skip=True)
         email_df = email_df[
             [
                 "EmplID",
-                "PacificEmail"
+                "PacificEmail",
             ]
         ].drop_duplicates()
         self.hours_df = make_df(file_hours, pay_period)
@@ -28,9 +31,9 @@ class hours_breakdown:
             email_df,
             left_on="Empl_ID",
             right_on="EmplID",
-            how="left"
+            how="left",
         )
-        self.hours_df = self.hours_df[
+        self.hours_df: DataFrame = self.hours_df[
             [
                 "Empl_ID",
                 "JobECLS",
@@ -38,11 +41,12 @@ class hours_breakdown:
                 "ts_entry_date",
                 "appr_id",
                 "PacificEmail",
-                "earning_hours"
+                "earning_hours",
             ]
         ]
 
     def over_eight_hours(self) -> list[str]:
+        """Return emails for employees with daily overtime on REG hours."""
         new_order_df = self.hours_df.groupby(
             self.hours_df.columns.tolist()[:-1],
             as_index=False,
@@ -58,6 +62,7 @@ class hours_breakdown:
         return make_list(final_df["PacificEmail"].unique().tolist())
 
     def over_twelve_hours(self) -> list[str]:
+        """Return emails for employees with more than 12 hours in a day."""
         new_order_df = self.hours_df.copy()
         new_order_df.loc[:, "earn_code"] = new_order_df["earn_code"].replace(
             {
@@ -77,8 +82,9 @@ class hours_breakdown:
         return make_list(final_df["PacificEmail"].unique().tolist())
 
     def weekend_overtime(self) -> list[str]:
+        """Return emails for non-union employees with weekly overtime over 40 hours."""
         df = self.hours_df.copy()
-        df["ts_entry_date"] = pandas.to_datetime(df["ts_entry_date"])
+        df["ts_entry_date"] = pd.to_datetime(df["ts_entry_date"])
         df = df[
             (df["earn_code"] == "REG") & (~df["JobECLS"].isin(["UU", "VV"]))
         ].copy()
@@ -107,18 +113,18 @@ class hours_breakdown:
         )
 
     def union_weekend_overtime(self) -> list[str]:
+        """Return emails for union employees with 5+ unique REG days in a week."""
         df = self.hours_df.copy()
-        df["ts_entry_date"] = pandas.to_datetime(
-            df["ts_entry_date"]
-        ).dt.floor("D")
+        df["ts_entry_date"] = pd.to_datetime(df["ts_entry_date"]).dt.floor("D")
         df = df[
             (df["earn_code"] == "REG") &
             (df["JobECLS"].isin(["UU", "VV"]))
         ].copy()
         if df.empty:
             return []
+
         min_date = df["ts_entry_date"].min()
-        period_start = min_date - pandas.to_timedelta(
+        period_start = min_date - pd.to_timedelta(
             min_date.weekday(), unit="D"
         )
         df["days_from_period_start"] = (
@@ -130,16 +136,21 @@ class hours_breakdown:
         ].copy()
         if df.empty:
             return []
+
         df["week_number"] = (df["days_from_period_start"] // 7) + 1
         df = df.groupby(
             ["Empl_ID", "week_number", "PacificEmail"],
-            as_index=False
+            as_index=False,
         )["ts_entry_date"].nunique()
         df = df.rename(columns={"ts_entry_date": "unique_reg_days"})
+
         result = df[df["unique_reg_days"] > 5]
         if result.empty:
             return []
-        return make_list(result["PacificEmail"].dropna().unique().tolist())
+
+        return make_list(
+            result["PacificEmail"].dropna().unique().tolist()
+        )
 
     def holiday_detection_type(self, hol_list: list) -> list[str]:
         filtered_df = (

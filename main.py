@@ -7,10 +7,11 @@ from helpers.status import *
 from helpers.support import *
 from helpers.templates import *
 
+# Load the configured timesheet website link from .env.
 env_path = Path(__file__).resolve().parents[1] / ".env"
 config = configparser.ConfigParser()
 config.read(env_path)
-TIMESHEET_LINK = config.get("Payroll-Checker", "website", fallback="")
+TIMESHEET_LINK: str = config.get("Payroll-Checker", "website", fallback="")
 if not TIMESHEET_LINK:
     raise ValueError(f"Missing TIMESHEET_LINK in {env_path}")
 
@@ -140,8 +141,8 @@ pending.plot_timesheet_statuses_by_job_ecls(
     save_path=downloads / "Timesheet_Status_Distribution_by_Job_Ecls.png"
 )
 
-downloads = Path.home() / "Downloads"
-reporter_instance = reporter(downloads, downloads)
+downloads: Path = Path.home() / "Downloads"
+reporter_instance: reporter = reporter(downloads, downloads)
 reporter_instance.generate_overtime_report()
 reporter_instance.generate_union_meal_report()
 reporter_instance.generate_weekend_ot_report()

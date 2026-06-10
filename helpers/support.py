@@ -8,7 +8,8 @@ import win32com.client as win32
 
 
 def holidays_input() -> list[str]:
-    holiday_list = []
+    """Prompt the user for holiday dates in YYYY-MM-DD format."""
+    holiday_list: list[str] = []
     while True:
         holiday = input("Enter 1 holiday: [%YYYY-%mm-%dd] ")
         try:
@@ -31,21 +32,20 @@ def holidays_input() -> list[str]:
             print(f"Holidays: {holiday_list}")
             if (input("Is this correct? [Y/n] ").lower() or 'y') == 'y':
                 return holiday_list
-            else:
-                holiday_list.clear()
-                continue
+            holiday_list.clear()
 
 
-def make_list(check: list) -> list:
+def make_list(check: list) -> list[str]:
+    """Validate a list of emails and return the same list if valid."""
     assert isinstance(check, list), "Input must be a list"
     for i in check:
         assert validators.email(i), f"Invalid email format: {i}"
-    else:
-        return check
+    return check
 
 
 def pay_period_check() -> int:
-    pay_periods = [str(x) for x in range(1,27)]
+    """Ask the user for the current pay period number (1-26)."""
+    pay_periods = [str(x) for x in range(1, 27)]
     while True:
         result = input("What pay period is it? ")
         if (
@@ -85,19 +85,21 @@ def collect_file(keyword: str) -> Path:
     return latest_file
 
 
-def make_df(file: Path, pay_period: int, skip = False) -> DataFrame:
-    assert isinstance(
-        file, Path
-    ), f"Bad file input type {type(file)=}"
+def make_df(file: Path, pay_period: int, skip: bool = False) -> DataFrame:
+    """Load a CSV into a DataFrame and filter by pay period when required."""
+    assert isinstance(file, Path), f"Bad file input type {type(file)=}"
     df = pandas.read_csv(file)
     headers = df.columns
-    if skip: return df
+    if skip:
+        return df
     for header in headers:
         if "pay" in header.lower() and "no" in header.lower():
             if df[header].iloc[0] == pay_period:
                 return df
-    else:
-        print(f"Warning: No matching pay period found in {file}. Expected pay period: {pay_period}.")
+    print(
+        f"Warning: No matching pay period found in {file}. "
+        f"Expected pay period: {pay_period}."
+    )
 
 
 class winEmail:

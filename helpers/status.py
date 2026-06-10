@@ -2,11 +2,13 @@ from pathlib import Path
 from datetime import date
 import pandas
 import matplotlib.pyplot as plt
-from helpers.support import *
+from helpers.support import make_df, make_list
 
 
 class notStarted:
-    def __init__(self, file: Path, pay_period: int):
+    """Track employees whose timesheets have not yet been started."""
+
+    def __init__(self, file: Path, pay_period: int) -> None:
         self.df = make_df(file, pay_period)
         self.df = self.df[
             [
@@ -29,18 +31,22 @@ class pending:
         # TODO: final order and drop duplicates.
 
     def pending_list(self) -> list[str]:
+        """Return approver emails for timesheets still pending approval."""
         final_df = self.df[self.df["ts_Status"] == "Pending"]
         if final_df.empty:
             return []
         return make_list(final_df["ApprEmail"].unique().tolist())
+
     def zero_hours_list(self) -> list[str]:
-        pass
+        """Placeholder for employees with zero hours in the selected pay period."""
+        return []
 
     def plot_timesheet_statuses(
         self,
-        title='Timesheet Status',
-        save_path='timesheet_status_distribution.png',
-    ):
+        title: str = 'Timesheet Status',
+        save_path: str = 'timesheet_status_distribution.png',
+    ) -> None:
+        """Generate a bar chart of timesheet statuses and save it to a file."""
         plt.style.use('dark_background')
         year = date.today().year
         white_list = ['EmplID', 'job_ecls', 'ts_Status']
@@ -65,9 +71,10 @@ class pending:
 
     def plot_timesheet_statuses_by_job_ecls(
         self,
-        title='Timesheet Status by Job Class',
-        save_path='timesheet_status_distribution.png',
-    ):
+        title: str = 'Timesheet Status by Job Class',
+        save_path: str = 'timesheet_status_distribution.png',
+    ) -> None:
+        """Generate a stacked bar chart of timesheet statuses by job class."""
         plt.style.use('dark_background')
         year = date.today().year
         white_list = ['EmplID', 'job_ecls', 'ts_Status']

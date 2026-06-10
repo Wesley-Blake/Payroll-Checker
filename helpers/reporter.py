@@ -1,13 +1,23 @@
 from pathlib import Path
 import pandas as pd
+from pandas import DataFrame
 
 
 class reporter:
-    def __init__(self, file_hours: Path, output_dir: Path):
-        self.df = pd.read_csv(self._find_latest_timesheet_csv(file_hours))
+    """Generate payroll reports from the latest timesheet CSV."""
+
+    def __init__(self, file_hours: Path, output_dir: Path) -> None:
+        self.df: DataFrame = pd.read_csv(
+            self._find_latest_timesheet_csv(file_hours)
+        )
         self.output_dir = Path(output_dir)
 
-    def _find_latest_timesheet_csv(self, search_path: Path | None = None) -> Path:
+    def _find_latest_timesheet_csv(
+        self,
+        search_path: Path | None = None,
+    ) -> Path:
+        if search_path is None:
+            search_path = Path.home() / "Downloads"
         search_path = Path(search_path)
         files = [
             file for file in search_path.iterdir()
@@ -19,7 +29,8 @@ class reporter:
             raise FileNotFoundError("No matching file found in the Downloads folder.")
         return max(files, key=lambda path: path.stat().st_mtime)
 
-    def generate_overtime_report(self):
+    def generate_overtime_report(self) -> None:
+        """Write the daily overtime report to the configured output directory."""
         white_list = [
             "Empl_ID",
             "JobECLS",
@@ -43,7 +54,8 @@ class reporter:
         output_path = self.output_dir / "overtime_report.csv"
         final_df.to_csv(output_path, index=False)
 
-    def generate_union_meal_report(self):
+    def generate_union_meal_report(self) -> None:
+        """Write the union meal report to the configured output directory."""
         white_list = [
             "Empl_ID",
             "JobECLS",
@@ -69,7 +81,8 @@ class reporter:
         output_path = self.output_dir / "union_meal.csv"
         counts.to_csv(output_path, index=False)
 
-    def generate_weekend_ot_report(self):
+    def generate_weekend_ot_report(self) -> None:
+        """Write the weekend overtime report to the configured output directory."""
         df = self.df[self.df["earn_code"] == "REG"].copy()
         white_list = [
             "Empl_ID",
