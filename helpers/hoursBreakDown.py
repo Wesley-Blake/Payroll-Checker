@@ -26,7 +26,7 @@ class hours_breakdown:
                 "earning_hours"
             ]
         ]
-        self.hours_df = pandas.merge(
+        self.hours_df = pd.merge(
             self.hours_df,
             email_df,
             left_on="Empl_ID",
@@ -89,7 +89,7 @@ class hours_breakdown:
             (df["earn_code"] == "REG") & (~df["JobECLS"].isin(["UU", "VV"]))
         ].copy()
         min_date = df["ts_entry_date"].dt.floor("D").min()
-        period_start = min_date - pandas.to_timedelta(
+        period_start = min_date - pd.to_timedelta(
             min_date.weekday(), unit="D"
         )
         df["days_from_period_start"] = (

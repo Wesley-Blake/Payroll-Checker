@@ -1,7 +1,7 @@
 from pathlib import Path
 from datetime import datetime
 import configparser
-import pandas
+import pandas as pd
 from pandas import DataFrame
 import validators
 import win32com.client as win32
@@ -88,7 +88,7 @@ def collect_file(keyword: str) -> Path:
 def make_df(file: Path, pay_period: int, skip: bool = False) -> DataFrame:
     """Load a CSV into a DataFrame and filter by pay period when required."""
     assert isinstance(file, Path), f"Bad file input type {type(file)=}"
-    df = pandas.read_csv(file)
+    df = pd.read_csv(file)
     headers = df.columns
     if skip:
         return df

@@ -1,6 +1,6 @@
 from pathlib import Path
 from datetime import date
-import pandas
+import pandas as pd
 import matplotlib.pyplot as plt
 from helpers.support import make_df, make_list
 
