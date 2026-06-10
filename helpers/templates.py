@@ -56,6 +56,22 @@ Example:
 8 REG (7.5 union) + 4 OT (4.5 union) = 12 hours and everything else is in OT2.
 """
 
+WEEKEND_OT_TEMPLATE = """\
+Hi,
+Friendly Reminder: Weekend Overtime Detected
+We noticed that you recorded more than 40 hours of regular time in a week.
+Overtime for hours over 40 in a week hasn't been allocated yet.
+For helpful guidance, you can review the overtime rules here: https://www.dir.ca.gov/dlse/FAQ_Overtime.htm
+"""
+
+UNION_WEEKEND_OT_TEMPLATE = """\
+Hi,
+Friendly Reminder: Union Weekend Overtime Detected
+We noticed that your timesheet includes more than 5 unique days of regular hours in a Monday-Sunday week.
+Please review your timesheet and allocate overtime if appropriate.
+For guidance, you can review the overtime rules in the union contract.
+"""
+
 OVERLAPPING_TEMPLATE = """\
 Hi,
 

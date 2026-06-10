@@ -68,16 +68,6 @@ def pay_period_check() -> int:
 #    g = make_bar()
 #    return lambda: print(next(g), end='', flush=True)
 
-#def setup_logger(name: str) -> object:
-#    logger = logging.getLogger(name)
-#    logger.setLevel(logging.DEBUG)
-#    file_handler = logging.FileHandler(f"{name}")
-#    file_handler.setLevel(logging.DEBUG)
-#    formatter = logging.Formatter('%(asctime)s - %(funcName)s - %(levelname)s - %(message)s')
-#    file_handler.setFormatter(formatter)
-#    logger.addHandler(file_handler)
-#    return logger
-
 
 def collect_file(keyword: str) -> Path:
     directory = Path.home() / "Downloads"

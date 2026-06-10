@@ -14,6 +14,7 @@ class overlapping_hours:
                 "Empl_Email"
             ]
         ].drop_duplicates()
+
     def overlapping_list(self) -> list[str]:
         file = self.df
         white_list = ['REG', 'SHF', 'HOL', 'HLW']

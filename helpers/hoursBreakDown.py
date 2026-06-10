@@ -30,7 +30,6 @@ class hours_breakdown:
             right_on="EmplID",
             how="left"
         )
-        # NOTE: final order.
         self.hours_df = self.hours_df[
             [
                 "Empl_ID",
@@ -76,6 +75,71 @@ class hours_breakdown:
         if final_df.empty:
             return []
         return make_list(final_df["PacificEmail"].unique().tolist())
+
+    def weekend_overtime(self) -> list[str]:
+        df = self.hours_df.copy()
+        df["ts_entry_date"] = pandas.to_datetime(df["ts_entry_date"])
+        df = df[
+            (df["earn_code"] == "REG") & (~df["JobECLS"].isin(["UU", "VV"]))
+        ].copy()
+        min_date = df["ts_entry_date"].dt.floor("D").min()
+        period_start = min_date - pandas.to_timedelta(
+            min_date.weekday(), unit="D"
+        )
+        df["days_from_period_start"] = (
+            df["ts_entry_date"].dt.floor("D") - period_start
+        ).dt.days
+        df = df[
+            (df["days_from_period_start"] >= 0) &
+            (df["days_from_period_start"] < 14)
+        ].copy()
+        df["week_number"] = (df["days_from_period_start"] // 7) + 1
+        weekly = (
+            df.groupby(["Empl_ID", "week_number"], as_index=False)
+              .earning_hours.sum()
+              .rename(columns={"earning_hours": "hours_total"})
+        )
+        result = weekly[weekly["hours_total"] > 40]
+        if result.empty:
+            return []
+        return make_list(
+            df[df["Empl_ID"].isin(result["Empl_ID"])]["PacificEmail"].dropna().unique().tolist()
+        )
+
+    def union_weekend_overtime(self) -> list[str]:
+        df = self.hours_df.copy()
+        df["ts_entry_date"] = pandas.to_datetime(
+            df["ts_entry_date"]
+        ).dt.floor("D")
+        df = df[
+            (df["earn_code"] == "REG") &
+            (df["JobECLS"].isin(["UU", "VV"]))
+        ].copy()
+        if df.empty:
+            return []
+        min_date = df["ts_entry_date"].min()
+        period_start = min_date - pandas.to_timedelta(
+            min_date.weekday(), unit="D"
+        )
+        df["days_from_period_start"] = (
+            df["ts_entry_date"] - period_start
+        ).dt.days
+        df = df[
+            (df["days_from_period_start"] >= 0) &
+            (df["days_from_period_start"] < 14)
+        ].copy()
+        if df.empty:
+            return []
+        df["week_number"] = (df["days_from_period_start"] // 7) + 1
+        df = df.groupby(
+            ["Empl_ID", "week_number", "PacificEmail"],
+            as_index=False
+        )["ts_entry_date"].nunique()
+        df = df.rename(columns={"ts_entry_date": "unique_reg_days"})
+        result = df[df["unique_reg_days"] > 5]
+        if result.empty:
+            return []
+        return make_list(result["PacificEmail"].dropna().unique().tolist())
 
     def holiday_detection_type(self, hol_list: list) -> list[str]:
         filtered_df = (

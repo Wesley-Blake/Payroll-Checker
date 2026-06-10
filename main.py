@@ -2,15 +2,15 @@ from pathlib import Path
 import configparser
 from helpers.hoursBreakDown import *
 from helpers.overlapping import *
+from helpers.reporter import reporter
 from helpers.status import *
 from helpers.support import *
 from helpers.templates import *
 
-
+env_path = Path(__file__).resolve().parents[1] / ".env"
 config = configparser.ConfigParser()
-config.read(".env")
+config.read(env_path)
 TIMESHEET_LINK = config.get("Payroll-Checker", "website", fallback="")
-TIMESHEET_LINK = config["Payroll-Checker"]["website"]
 if not TIMESHEET_LINK:
     raise ValueError(f"Missing TIMESHEET_LINK in {env_path}")
 
@@ -86,6 +86,24 @@ if result_over_twelve := hours_breakdown.over_twelve_hours():
         TIMESHEET_LINK
     )
 
+# Weekend overtime check
+if result_weekend_overtime := hours_breakdown.weekend_overtime():
+    emailer.send_email(
+        result_weekend_overtime,
+        PAY_PERIOD,
+        WEEKEND_OT_TEMPLATE + \
+        TIMESHEET_LINK
+    )
+
+# Union weekend overtime check
+if result_union_weekend_overtime := hours_breakdown.union_weekend_overtime():
+    emailer.send_email(
+        result_union_weekend_overtime,
+        PAY_PERIOD,
+        UNION_WEEKEND_OT_TEMPLATE + \
+        TIMESHEET_LINK
+    )
+
 # Overlapping Check
 if result_overlapping := overlapping_hours.overlapping_list():
     emailer.send_email(
@@ -121,3 +139,9 @@ pending.plot_timesheet_statuses_by_job_ecls(
     title=f"{PAY_PERIOD} Timesheet Status Distribution",
     save_path=downloads / "Timesheet_Status_Distribution_by_Job_Ecls.png"
 )
+
+downloads = Path.home() / "Downloads"
+reporter_instance = reporter(downloads, downloads)
+reporter_instance.generate_overtime_report()
+reporter_instance.generate_union_meal_report()
+reporter_instance.generate_weekend_ot_report()

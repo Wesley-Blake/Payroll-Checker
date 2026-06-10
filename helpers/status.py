@@ -2,14 +2,10 @@ from pathlib import Path
 from datetime import date
 import pandas
 import matplotlib.pyplot as plt
-try:
-    from helpers.support import *
-except:
-    pass
+from helpers.support import *
 
 
 class notStarted:
-
     def __init__(self, file: Path, pay_period: int):
         self.df = make_df(file, pay_period)
         self.df = self.df[
@@ -28,7 +24,6 @@ class notStarted:
 
 
 class pending:
-
     def __init__(self, file: Path, pay_period: int):
         self.df = make_df(file, pay_period)
         # TODO: final order and drop duplicates.
@@ -74,7 +69,6 @@ class pending:
         save_path='timesheet_status_distribution.png',
     ):
         plt.style.use('dark_background')
-
         year = date.today().year
         white_list = ['EmplID', 'job_ecls', 'ts_Status']
         df = self.df[white_list].drop_duplicates()
@@ -106,18 +100,3 @@ class pending:
             ax.bar_label(container, labels=labels, label_type='center')
         plt.tight_layout()
         plt.savefig(save_path)
-
-if __name__ == "__main__":
-    from support import collect_file, make_df, pay_period_check
-    downloads = Path.home() / "Downloads"
-    file = collect_file("Comments")
-    pay_period = pay_period_check()
-    pending_timesheets = pending(file, pay_period)
-    pending_timesheets.plot_timesheet_statuses(
-        title=f"{pay_period} Timesheet Status Distribution",
-        save_path=downloads / "Timesheet_Status_Distribution.png"
-    )
-    pending_timesheets.plot_timesheet_statuses_by_job_ecls(
-        title=f"{pay_period} Timesheet Status Distribution",
-        save_path=downloads / "Timesheet_Status_Distribution_by_Job_Ecls.png"
-    )
