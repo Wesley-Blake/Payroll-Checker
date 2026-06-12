@@ -2,15 +2,16 @@ from pathlib import Path
 from datetime import date
 import pandas as pd
 import matplotlib.pyplot as plt
-from helpers.support import make_df, make_list
+try:
+    from helpers.support import make_df, make_list
+except ImportError as e:
+    from support import make_df, make_list, collect_file, pay_period_check
 
-
-class notStarted:
+class not_started:
     """Track employees whose timesheets have not yet been started."""
-
-    def __init__(self, file: Path, pay_period: int) -> None:
-        self.df = make_df(file, pay_period)
-        self.df = self.df[
+    def __init__(self, not_started_file: Path, pay_period: int) -> None:
+        not_started_df = make_df(not_started_file, pay_period)
+        self.not_started_df = not_started_df[
             [
                 "EmplID",
                 "job_ecls",
@@ -20,26 +21,43 @@ class notStarted:
         ].drop_duplicates()
 
     def not_started_list(self) -> list[str]:
-        if self.df.empty:
+        if self.not_started_df.empty:
             return []
-        return make_list(self.df["EmplEmail"].unique().tolist())
-
+        return make_list(self.not_started_df["EmplEmail"].unique().tolist())
 
 class pending:
-    def __init__(self, file: Path, pay_period: int):
-        self.df = make_df(file, pay_period)
-        # TODO: final order and drop duplicates.
+    """Track employees whose timesheets are pending approval."""
+    def __init__(self, status_file: Path, pay_period: int) -> None:
+        status_df = make_df(status_file, pay_period)
+        self.status_df = status_df[
+            [
+                "EmplID",
+                "job_ecls",
+                "PosnSuff",
+                "ts_Status",
+                "EmplEmail",
+                "ApprEmail",
+            ]
+        ].drop_duplicates()
 
     def pending_list(self) -> list[str]:
         """Return approver emails for timesheets still pending approval."""
-        final_df = self.df[self.df["ts_Status"] == "Pending"]
+        final_df = self.status_df[self.status_df["ts_Status"] == "Pending"]
         if final_df.empty:
             return []
         return make_list(final_df["ApprEmail"].unique().tolist())
 
-    def zero_hours_list(self) -> list[str]:
-        """Placeholder for employees with zero hours in the selected pay period."""
-        return []
+    #def zero_hours_list(self) -> list[str]:
+    #    """Return active employee emails missing a status record for the pay period."""
+    #    zero_hours_df = self.active_df[
+    #        ~self.active_df["EmplID"].isin(self.status_df["EmplID"])
+    #    ].copy()
+    #    zero_hours_df = zero_hours_df[
+    #        ~zero_hours_df["EmplID"].isin(self.not_started_df["EmplID"])
+    #    ].copy()
+    #    return make_list(
+    #        zero_hours_df["PacificEmail"].dropna().unique().tolist()
+    #    )
 
     def plot_timesheet_statuses(
         self,
@@ -50,7 +68,7 @@ class pending:
         plt.style.use('dark_background')
         year = date.today().year
         white_list = ['EmplID', 'job_ecls', 'ts_Status']
-        df = self.df[white_list].drop_duplicates()
+        df = self.status_df[white_list].drop_duplicates()
         status_counts = df['ts_Status'].value_counts()
         plt.figure()
         ax = status_counts.plot(kind='bar', color='#E7762E')
@@ -78,7 +96,7 @@ class pending:
         plt.style.use('dark_background')
         year = date.today().year
         white_list = ['EmplID', 'job_ecls', 'ts_Status']
-        df = self.df[white_list].drop_duplicates()
+        df = self.status_df[white_list].drop_duplicates()
         counts = (
             df
             .groupby(["ts_Status", "job_ecls"])
@@ -107,3 +125,11 @@ class pending:
             ax.bar_label(container, labels=labels, label_type='center')
         plt.tight_layout()
         plt.savefig(save_path)
+
+if __name__ == "__main__":
+    test = pending(
+        collect_file("Time_Sheet_Status_&_Comments"),
+        pay_period_check(),
+    )
+    print(test.plot_timesheet_statuses(save_path=Path.home() / "Downloads" / "test_status_distribution.png"))
+    print(test.plot_timesheet_statuses_by_job_ecls(save_path=Path.home() / "Downloads" / "test_status_distribution_by_job_ecls.png"))

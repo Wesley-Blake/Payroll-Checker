@@ -26,7 +26,7 @@ overlapping_hours = overlapping_hours(
     collect_file("Overlapping"),
     PAY_PERIOD
 )
-not_started = notStarted(
+not_started = not_started(
     collect_file("not_yet_started_WTE"),
     PAY_PERIOD
 )
