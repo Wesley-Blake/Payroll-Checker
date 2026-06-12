@@ -77,7 +77,6 @@ def collect_file(keyword: str) -> Path:
         if keyword in file.name:
             if latest_file is not None:
                 if file.stat().st_mtime > latest_file.stat().st_mtime:
-                    print(f"Found file: {file.name}")
                     latest_file = file
             else:
                 latest_file = file
