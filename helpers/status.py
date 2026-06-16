@@ -25,6 +25,7 @@ class not_started:
             return []
         return make_list(self.not_started_df["EmplEmail"].unique().tolist())
 
+
 class pending:
     """Track employees whose timesheets are pending approval."""
     def __init__(self, status_file: Path, pay_period: int) -> None:
