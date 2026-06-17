@@ -112,3 +112,12 @@ class reporter:
         result = weekly[weekly["hours_total"] > 40].reset_index(drop=True)
         output_path = self.output_dir / "weekend_ot.csv"
         result.to_csv(output_path, index=False)
+
+if __name__ == "__main__":
+    r = reporter(
+        file_hours=Path.home() / "Downloads",
+        output_dir=Path.home() / "Downloads"
+    )
+    r.generate_overtime_report()
+    r.generate_union_meal_report()
+    r.generate_weekend_ot_report()
