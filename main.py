@@ -69,6 +69,15 @@ else:
             TIMESHEET_LINK
         )
 
+# Incorrect Earn Code Check
+if result_incorrect_earn_code := hours_breakdown.incorrect_earn_code():
+    emailer.send_email(
+        result_incorrect_earn_code,
+        PAY_PERIOD,
+        INCORRECT_EARN_CODE_TEMPLATE + \
+        TIMESHEET_LINK
+    )
+
 # Overtime Check
 if result_overtime := hours_breakdown.over_eight_hours():
     emailer.send_email(

@@ -34,6 +34,14 @@ If you haven't worked, then you wouldn't need to do anyhting, but if you have wo
 
 """
 
+INCORRECT_EARN_CODE_TEMPLATE = """\
+Hi,
+
+Friendly Reminder: Incorrect Earn Code Detected
+[ SHD ]
+
+"""
+
 OVERTIME_TEMPLATE = """\
 Hi,
 

@@ -45,6 +45,15 @@ class hours_breakdown:
             ]
         ]
 
+    def incorrect_earn_code(self) -> list[str]:
+        """Return emails for employees with STK earn codes ."""
+        final_df = self.hours_df[
+            self.hours_df["earn_code"].isin(["SHD"])
+        ].copy()
+        if final_df.empty:
+            return []
+        return make_list(final_df["PacificEmail"].unique().tolist())
+
     def over_eight_hours(self) -> list[str]:
         """Return emails for employees with daily overtime on REG hours."""
         new_order_df = self.hours_df.groupby(
