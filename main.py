@@ -12,6 +12,7 @@ from helpers.templates import *
 # TODO: create objects
 # TODO: trasnform data
 # TODO: send emails
+# TODO: pay period detector - json?
 # TODO: pyautogui argos
 # TODO: windows task schedule
 
