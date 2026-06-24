@@ -7,6 +7,14 @@ from helpers.status import *
 from helpers.support import *
 from helpers.templates import *
 
+# TODO: new logger for failures below
+# TODO: file collection
+# TODO: create objects
+# TODO: trasnform data
+# TODO: send emails
+# TODO: pyautogui argos
+# TODO: windows task schedule
+
 # Load the configured timesheet website link from .env.
 env_path = Path(__file__).resolve().parents[1] / ".env"
 config = configparser.ConfigParser()
