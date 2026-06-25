@@ -56,16 +56,18 @@ class hours_breakdown:
 
     def over_eight_hours(self) -> list[str]:
         """Return emails for employees with daily overtime on REG hours."""
-        new_order_df = self.hours_df.groupby(
+        new_order_df = self.hours_df[
+            self.hours_df["earn_code"] == "REG"
+            ].copy().drop_duplicates()
+        new_order_df = new_order_df.groupby(
             self.hours_df.columns.tolist()[:-1],
             as_index=False,
         )["earning_hours"].sum()
-        earn_code = new_order_df["earn_code"] == "REG"
         is_uu = new_order_df["JobECLS"] == "UU"
         is_vv = new_order_df["JobECLS"] == "VV"
         union = ((is_uu | is_vv) & (new_order_df["earning_hours"] > 7.5))
         non_union = (~(is_uu | is_vv) & (new_order_df["earning_hours"] > 8))
-        final_df = new_order_df[earn_code & (union | non_union)]
+        final_df = new_order_df[(union | non_union)]
         if final_df.empty:
             return []
         return make_list(final_df["PacificEmail"].unique().tolist())

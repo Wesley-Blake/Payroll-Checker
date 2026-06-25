@@ -39,16 +39,16 @@ class reporter:
             "earning_hours",
         ]
         df = self.df[white_list].copy()
+        df = df[df["earn_code"] == "REG"].drop_duplicates()
         new_order_df = df.groupby(
             df.columns.tolist()[:-1],
             as_index=False,
         )["earning_hours"].sum()
-        earn_code = new_order_df["earn_code"] == "REG"
         is_uu = new_order_df["JobECLS"] == "UU"
         is_vv = new_order_df["JobECLS"] == "VV"
         union = ((is_uu | is_vv) & (new_order_df["earning_hours"] > 7.5))
         non_union = (~(is_uu | is_vv) & (new_order_df["earning_hours"] > 8))
-        final_df = new_order_df[earn_code & (union | non_union)]
+        final_df = new_order_df[(union | non_union)]
         if final_df.empty:
             raise ValueError("No employees found with the specified criteria.")
         output_path = self.output_dir / "overtime_report.csv"
@@ -92,8 +92,8 @@ class reporter:
             "earning_hours",
         ]
         df = df[white_list]
+        df = df[df["earn_code"] == "REG"].drop_duplicates()
         df["ts_entry_date"] = pd.to_datetime(df["ts_entry_date"])
-        df = df[df["earn_code"] == "REG"].copy()
         min_date = df["ts_entry_date"].dt.floor("D").min()
         period_start = min_date - pd.to_timedelta(min_date.weekday(), unit="D")
         df["days_from_period_start"] = (
@@ -102,7 +102,7 @@ class reporter:
         df = df[
             (df["days_from_period_start"] >= 0) &
             (df["days_from_period_start"] < 14)
-        ].copy()
+        ]
         df["week_number"] = (df["days_from_period_start"] // 7) + 1
         weekly = (
             df.groupby(["Empl_ID", "week_number"], as_index=False)
