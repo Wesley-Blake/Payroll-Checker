@@ -81,13 +81,16 @@ class hours_breakdown:
                 "OT": "REG&OT",
             }
         )
+        new_order_df = new_order_df[
+            new_order_df["earn_code"] == "REG&OT"
+        ].drop_duplicates()
         new_order_df = new_order_df.groupby(
             self.hours_df.columns.tolist()[:-1],
             as_index=False
         )["earning_hours"].sum()
-        earn_code = new_order_df["earn_code"] == "REG&OT"
-        over_twelve_df = ((new_order_df["earning_hours"] > 12))
-        final_df = new_order_df[earn_code & over_twelve_df]
+        final_df = new_order_df[
+            ((new_order_df["earning_hours"] > 12))
+        ]
         if final_df.empty:
             return []
         return make_list(final_df["PacificEmail"].unique().tolist())
@@ -95,10 +98,10 @@ class hours_breakdown:
     def weekend_overtime(self) -> list[str]:
         """Return emails for non-union employees with weekly overtime over 40 hours."""
         df = self.hours_df.copy()
-        df["ts_entry_date"] = pd.to_datetime(df["ts_entry_date"])
         df = df[
             (df["earn_code"] == "REG") & (~df["JobECLS"].isin(["UU", "VV"]))
-        ].copy()
+        ].drop_duplicates()
+        df["ts_entry_date"] = pd.to_datetime(df["ts_entry_date"])
         min_date = df["ts_entry_date"].dt.floor("D").min()
         period_start = min_date - pd.to_timedelta(
             min_date.weekday(), unit="D"
@@ -126,14 +129,13 @@ class hours_breakdown:
     def union_weekend_overtime(self) -> list[str]:
         """Return emails for union employees with 5+ unique REG days in a week."""
         df = self.hours_df.copy()
-        df["ts_entry_date"] = pd.to_datetime(df["ts_entry_date"]).dt.floor("D")
         df = df[
             (df["earn_code"] == "REG") &
             (df["JobECLS"].isin(["UU", "VV"]))
-        ].copy()
+        ].drop_duplicates()
         if df.empty:
             return []
-
+        df["ts_entry_date"] = pd.to_datetime(df["ts_entry_date"]).dt.floor("D")
         min_date = df["ts_entry_date"].min()
         period_start = min_date - pd.to_timedelta(
             min_date.weekday(), unit="D"
@@ -144,21 +146,18 @@ class hours_breakdown:
         df = df[
             (df["days_from_period_start"] >= 0) &
             (df["days_from_period_start"] < 14)
-        ].copy()
+        ]
         if df.empty:
             return []
-
         df["week_number"] = (df["days_from_period_start"] // 7) + 1
         df = df.groupby(
             ["Empl_ID", "week_number", "PacificEmail"],
             as_index=False,
         )["ts_entry_date"].nunique()
         df = df.rename(columns={"ts_entry_date": "unique_reg_days"})
-
         result = df[df["unique_reg_days"] > 5]
         if result.empty:
             return []
-
         return make_list(
             result["PacificEmail"].dropna().unique().tolist()
         )
