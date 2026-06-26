@@ -46,37 +46,29 @@ pending = pending(
 emailer = winEmail()
 
 # Holiday Detections
-if list_o_holidays := holidays_input():
-    if result_holiday_type := hours_breakdown.holiday_detection_type(
-        list_o_holidays
-    ):
-        emailer.send_email(
-            result_holiday_type,
-            PAY_PERIOD,
-            HOLIDAY_TYPE_TEMPLATE.substitute(
-                list_o_holidays=', '.join(list_o_holidays)
-            ) + \
-            TIMESHEET_LINK
-        )
-    if result_holiday_date := hours_breakdown.holiday_detection_date(
-        list_o_holidays
-    ):
-        emailer.send_email(
-            result_holiday_date,
-            PAY_PERIOD,
-            HOLIDAY_DATE_TEMPLATE.substitute(
-                list_o_holidays=', '.join(list_o_holidays)
-            ) + \
-            TIMESHEET_LINK
-        )
-else:
-    if result_no_holiday := hours_breakdown.no_holiday_detection():
-        emailer.send_email(
-            result_no_holiday,
-            PAY_PERIOD,
-            NO_HOLIDAY_TEMPLATE + \
-            TIMESHEET_LINK
-        )
+list_o_holidays = holidays_input()
+if result_holiday_type := hours_breakdown.holiday_detection_type(
+    list_o_holidays
+):
+    emailer.send_email(
+        result_holiday_type,
+        PAY_PERIOD,
+        HOLIDAY_TYPE_TEMPLATE.substitute(
+            list_o_holidays=', '.join(list_o_holidays)
+        ) + \
+        TIMESHEET_LINK
+    )
+if result_holiday_date := hours_breakdown.holiday_detection_date(
+    list_o_holidays
+):
+    emailer.send_email(
+        result_holiday_date,
+        PAY_PERIOD,
+        HOLIDAY_DATE_TEMPLATE.substitute(
+            list_o_holidays=', '.join(list_o_holidays)
+        ) + \
+        TIMESHEET_LINK
+    )
 
 # Incorrect Earn Code Check
 if result_incorrect_earn_code := hours_breakdown.incorrect_earn_code():

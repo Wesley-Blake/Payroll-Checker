@@ -163,6 +163,8 @@ class hours_breakdown:
         )
 
     def holiday_detection_type(self, hol_list: list) -> list[str]:
+        """Incorrect earnings code on correct day(s)."""
+        if not hol_list: return []
         filtered_df = (
             self.hours_df[self.hours_df["ts_entry_date"].isin(hol_list)]
         )
@@ -170,7 +172,9 @@ class hours_breakdown:
             return []
         filter_holiday = (
             (filtered_df["earn_code"] == "HOL") |
-            (filtered_df["earn_code"] == "HLW")
+            (filtered_df["earn_code"] == "HLW") |
+            # People on LOA.
+            (filtered_df["earn_code"] == "DOC")
         )
         final_df = filtered_df[~filter_holiday]
         if final_df.empty:
@@ -178,6 +182,7 @@ class hours_breakdown:
         return make_list(final_df["PacificEmail"].unique().tolist())
 
     def holiday_detection_date(self, hol_list: list) -> list[str]:
+        """Holiday earnings code on normal day(s)."""
         filter_holiday = (
             (self.hours_df["earn_code"] == "HOL") |
             (self.hours_df["earn_code"] == "HLW")
@@ -185,17 +190,8 @@ class hours_breakdown:
         filtered_df = self.hours_df[filter_holiday]
         if filtered_df.empty:
             return []
-        final_df = filtered_df[~filtered_df["ts_entry_date"].isin(hol_list)]
-        if final_df.empty:
-            return []
-        return make_list(final_df["PacificEmail"].unique().tolist())
-
-    def no_holiday_detection(self) -> list[str]:
-        filter_holiday = (
-            (self.hours_df["earn_code"] == "HOL") |
-            (self.hours_df["earn_code"] == "HLW")
-        )
-        final_df = self.hours_df[filter_holiday]
-        if final_df.empty:
-            return []
+        if hol_list:
+            final_df = filtered_df[~filtered_df["ts_entry_date"].isin(hol_list)]
+            if final_df.empty:
+                return []
         return make_list(final_df["PacificEmail"].unique().tolist())

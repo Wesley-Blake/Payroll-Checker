@@ -49,8 +49,6 @@ class reporter:
         union = ((is_uu | is_vv) & (new_order_df["earning_hours"] > 7.5))
         non_union = (~(is_uu | is_vv) & (new_order_df["earning_hours"] > 8))
         final_df = new_order_df[(union | non_union)]
-        if final_df.empty:
-            raise ValueError("No employees found with the specified criteria.")
         output_path = self.output_dir / "overtime_report.csv"
         final_df.to_csv(output_path, index=False)
 
