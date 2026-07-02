@@ -22,17 +22,16 @@ def holidays_input() -> list[str]:
                 .isoformat()
             )
             holiday_list.append(date)
-        except Exception:
+        except Exception as e:
             raise ValueError(
                 f"Invalid date format: {holiday}. Expected format: YYYY-MM-DD."
-            )
-        finally:
-            if holiday:
-                continue
-            print(f"Holidays: {holiday_list}")
-            if (input("Is this correct? [Y/n] ").lower() or 'y') == 'y':
-                return holiday_list
-            holiday_list.clear()
+            ) from e
+        if holiday:
+            continue
+        print(f"Holidays: {holiday_list}")
+        if (input("Is this correct? [Y/n] ").lower() or 'y') == 'y':
+            return holiday_list
+        holiday_list.clear()
 
 
 def make_list(check: list) -> list[str]:
@@ -106,7 +105,7 @@ class winEmail:
         try:
             self.outlook = win32.Dispatch('outlook.application')
         except Exception as e:
-            raise RuntimeError(f"Error initializing Outlook: {e}")
+            raise RuntimeError(f"Error initializing Outlook: {e}") from e
 
     def send_email(self, bcc: list[str], pay_period: str, body: str) -> None:
         try:
@@ -120,8 +119,8 @@ class winEmail:
             if attachment.is_file():
                 mail.Attachments.Add(str(attachment))
             mail.Body = body
-            #mail.Display()
-            mail.Send()
+            mail.Display()
+            #mail.Send()
         finally:
             if mail is not None:
                 del mail

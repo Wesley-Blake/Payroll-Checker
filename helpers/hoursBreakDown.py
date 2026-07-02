@@ -161,6 +161,10 @@ class hours_breakdown:
         return make_list(
             result["PacificEmail"].dropna().unique().tolist()
         )
+    def seasonal_deteciton_type():
+        pass
+    def seasonal_deteciton_date():
+        pass
 
     def holiday_detection_type(self, hol_list: list) -> list[str]:
         """Incorrect earnings code on correct day(s)."""
@@ -169,12 +173,18 @@ class hours_breakdown:
             self.hours_df[self.hours_df["ts_entry_date"].isin(hol_list)]
         )
         if filtered_df.empty:
+            # TODO: No entries on list is bad.
             return []
+        # Exclude non benefit eligible.
+        holiday_eligible = ["OO","PP","UU","VV"]
+        filtered_df[filtered_df["JobECLS"].isin(holiday_eligible)]
+        # Remove correct codes.
         filter_holiday = (
             (filtered_df["earn_code"] == "HOL") |
             (filtered_df["earn_code"] == "HLW") |
             # People on LOA.
-            (filtered_df["earn_code"] == "DOC")
+            (filtered_df["earn_code"] == "DOC") |
+            (filtered_df["earn_code"] == "HCR")
         )
         final_df = filtered_df[~filter_holiday]
         if final_df.empty:
