@@ -1,10 +1,9 @@
 from pathlib import Path
 from datetime import date
-import pandas as pd
 import matplotlib.pyplot as plt
 try:
     from helpers.support import make_df, make_list
-except ImportError as e:
+except ImportError:
     from support import make_df, make_list, collect_file, pay_period_check
 
 class not_started:
@@ -105,7 +104,6 @@ class pending:
             .unstack(fill_value=0)
         )
         statuses = counts.index
-        job_ecls = counts.columns
         fig, ax = plt.subplots()
         counts.plot(
             kind='bar',

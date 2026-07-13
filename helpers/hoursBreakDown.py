@@ -168,7 +168,8 @@ class hours_breakdown:
 
     def holiday_detection_type(self, hol_list: list) -> list[str]:
         """Incorrect earnings code on correct day(s)."""
-        if not hol_list: return []
+        if not hol_list:
+            return []
         filtered_df = (
             self.hours_df[self.hours_df["ts_entry_date"].isin(hol_list)]
         )
