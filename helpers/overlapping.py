@@ -3,7 +3,7 @@ from pathlib import Path
 from helpers.support import make_df, make_list
 
 
-class overlapping_hours:
+class OverlappingHours:
     """Detect employees with overlapping non-regular earnings."""
 
     def __init__(self, file: Path, pay_period: int) -> None:

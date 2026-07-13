@@ -1,10 +1,10 @@
 from pathlib import Path
 import configparser
-from helpers.hoursBreakDown import hours_breakdown
-from helpers.overlapping import overlapping_hours
-from helpers.reporter import reporter
-from helpers.status import pending, not_started
-from helpers.support import pay_period_check, holidays_input, collect_file, winEmail
+from helpers.hoursBreakDown import HoursBreakdown
+from helpers.overlapping import OverlappingHours
+from helpers.reporter import Reporter
+from helpers.status import Pending, NotStarted
+from helpers.support import pay_period_check, holidays_input, collect_file, WinEmail
 from helpers.templates import (
     HOLIDAY_TYPE_TEMPLATE,
     HOLIDAY_DATE_TEMPLATE,
@@ -37,24 +37,24 @@ if not TIMESHEET_LINK:
 
 PAY_PERIOD = pay_period_check()
 
-hours_breakdown = hours_breakdown(
+hours_breakdown = HoursBreakdown(
     collect_file("ts_break_down"),
     collect_file("Active_Empls"),
     PAY_PERIOD
 )
-overlapping_hours = overlapping_hours(
+overlapping_hours = OverlappingHours(
     collect_file("Overlapping"),
     PAY_PERIOD
 )
-not_started = not_started(
+not_started = NotStarted(
     collect_file("not_yet_started_WTE"),
     PAY_PERIOD
 )
-pending = pending(
+pending = Pending(
     collect_file("Comments"),
     PAY_PERIOD
 )
-emailer = winEmail()
+emailer = WinEmail()
 
 # Holiday Detections
 list_o_holidays = holidays_input()
@@ -163,7 +163,7 @@ pending.plot_timesheet_statuses_by_job_ecls(
 )
 
 downloads: Path = Path.home() / "Downloads"
-reporter_instance: reporter = reporter(downloads, downloads)
+reporter_instance: Reporter = Reporter(downloads, downloads)
 reporter_instance.generate_overtime_report()
 reporter_instance.generate_union_meal_report()
 reporter_instance.generate_weekend_ot_report()

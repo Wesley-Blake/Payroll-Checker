@@ -3,7 +3,7 @@ import pandas as pd
 from pandas import DataFrame
 
 
-class reporter:
+class Reporter:
     """Generate payroll reports from the latest timesheet CSV."""
 
     def __init__(self, file_hours: Path, output_dir: Path) -> None:
@@ -112,7 +112,7 @@ class reporter:
         result.to_csv(output_path, index=False)
 
 if __name__ == "__main__":
-    r = reporter(
+    r = Reporter(
         file_hours=Path.home() / "Downloads",
         output_dir=Path.home() / "Downloads"
     )

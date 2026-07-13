@@ -4,7 +4,7 @@ from pandas import DataFrame
 from helpers.support import make_df, make_list
 
 
-class hours_breakdown:
+class HoursBreakdown:
     """Compute overtime and holiday detection email recipient lists."""
 
     def __init__(self, file_hours: Path, file_email: Path, pay_period: int) -> None:

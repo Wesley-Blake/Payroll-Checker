@@ -6,7 +6,7 @@ try:
 except ImportError:
     from support import make_df, make_list, collect_file, pay_period_check
 
-class not_started:
+class NotStarted:
     """Track employees whose timesheets have not yet been started."""
     def __init__(self, not_started_file: Path, pay_period: int) -> None:
         not_started_df = make_df(not_started_file, pay_period)
@@ -25,7 +25,7 @@ class not_started:
         return make_list(self.not_started_df["EmplEmail"].unique().tolist())
 
 
-class pending:
+class Pending:
     """Track employees whose timesheets are pending approval."""
     def __init__(self, status_file: Path, pay_period: int) -> None:
         status_df = make_df(status_file, pay_period)
@@ -126,7 +126,7 @@ class pending:
         plt.savefig(save_path)
 
 if __name__ == "__main__":
-    test = pending(
+    test = Pending(
         collect_file("Time_Sheet_Status_&_Comments"),
         pay_period_check(),
     )

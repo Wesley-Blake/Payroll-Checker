@@ -99,7 +99,7 @@ def make_df(file: Path, pay_period: int, skip: bool = False) -> DataFrame:
     )
 
 
-class winEmail:
+class WinEmail:
     def __init__(self):
         try:
             self.outlook = win32.Dispatch('outlook.application')
