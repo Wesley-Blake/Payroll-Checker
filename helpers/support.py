@@ -22,16 +22,15 @@ def holidays_input() -> list[str]:
                 .isoformat()
             )
             holiday_list.append(date)
-        except Exception as e:
-            raise ValueError(
-                f"Invalid date format: {holiday}. Expected format: YYYY-MM-DD."
-            ) from e
-        if holiday:
-            continue
-        print(f"Holidays: {holiday_list}")
-        if (input("Is this correct? [Y/n] ").lower() or 'y') == 'y':
-            return holiday_list
-        holiday_list.clear()
+        except ValueError:
+            pass
+        if not holiday:
+            break
+    print(f"Holidays: {holiday_list}")
+    if (input("Is this correct? [Y/n] ").lower() or 'y') == 'y':
+        return holiday_list
+    holiday_list.clear()
+    return holiday_list
 
 
 def make_list(check: list) -> list[str]:
@@ -94,7 +93,7 @@ def make_df(file: Path, pay_period: int, skip: bool = False) -> DataFrame:
         if "pay" in header.lower() and "no" in header.lower():
             if df[header].iloc[0] == pay_period:
                 return df
-    print(
+    raise ValueError(
         f"Warning: No matching pay period found in {file}. "
         f"Expected pay period: {pay_period}."
     )
@@ -119,8 +118,8 @@ class winEmail:
             if attachment.is_file():
                 mail.Attachments.Add(str(attachment))
             mail.Body = body
-            mail.Display()
-            #mail.Send()
+            #mail.Display()
+            mail.Send()
         finally:
             if mail is not None:
                 del mail
