@@ -107,6 +107,7 @@ class winEmail:
             raise RuntimeError(f"Error initializing Outlook: {e}") from e
 
     def send_email(self, bcc: list[str], pay_period: str, body: str) -> None:
+        mail = None
         try:
             mail = self.outlook.CreateItem(0)
             #mail.CC = cc
