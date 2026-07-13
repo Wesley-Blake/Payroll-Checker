@@ -1,12 +1,12 @@
 from string import Template
 
 
-NO_HOLIDAY_TEMPLATE = """\
-Hi,
-
-Friendly Reminder: Holiday / Holiday Worked was detected.
-There wasn't a holiday this pay period.
-"""
+#NO_HOLIDAY_TEMPLATE = """\
+#Hi,
+#
+#Friendly Reminder: Holiday / Holiday Worked was detected.
+#There wasn't a holiday this pay period.
+#"""
 
 HOLIDAY_DATE_TEMPLATE = Template("""\
 Hi,
@@ -99,11 +99,11 @@ Just a quick heads-up that you have employees whose timesheets are currently in 
 Thanks so much for your time and support!
 """
 
-MANAGER_TEMPLATE = Template("""\n
-Manager Notification:
-You're receiving this email because ${length} of your employees have a timesheet item to review for the pay period ${PAY_PERIOD}.
-They've been BCC'd on this message as a helpful reminder, so no action is needed from you at this time.
-
-Thanks so much, and have a great day!
-"""
-)
+#MANAGER_TEMPLATE = Template("""\n
+#Manager Notification:
+#You're receiving this email because ${length} of your employees have a timesheet item to review for the pay period ${PAY_PERIOD}.
+#They've been BCC'd on this message as a helpful reminder, so no action is needed from you at this time.
+#
+#Thanks so much, and have a great day!
+#"""
+#)
