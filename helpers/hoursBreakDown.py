@@ -1,7 +1,9 @@
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
 from pandas import DataFrame
-from helpers.support import make_df, make_list
+
+from .support import make_df, make_list
 
 
 class HoursBreakdown:
@@ -23,7 +25,7 @@ class HoursBreakdown:
                 "earn_code",
                 "ts_entry_date",
                 "appr_id",
-                "earning_hours"
+                "earning_hours",
             ]
         ]
         self.hours_df = pd.merge(
@@ -33,7 +35,7 @@ class HoursBreakdown:
             right_on="EmplID",
             how="left",
         )
-        self.hours_df: DataFrame = self.hours_df[
+        self.hours_df = self.hours_df[
             [
                 "Empl_ID",
                 "JobECLS",
@@ -44,29 +46,28 @@ class HoursBreakdown:
                 "earning_hours",
             ]
         ]
+        assert isinstance(self.hours_df, DataFrame)
 
     def incorrect_earn_code(self) -> list[str]:
         """Return emails for employees with STK earn codes ."""
-        final_df = self.hours_df[
-            self.hours_df["earn_code"].isin(["SHD"])
-        ].copy()
+        final_df = self.hours_df[self.hours_df["earn_code"].isin(["SHD"])].copy()
         if final_df.empty:
             return []
         return make_list(final_df["PacificEmail"].unique().tolist())
 
     def over_eight_hours(self) -> list[str]:
         """Return emails for employees with daily overtime on REG hours."""
-        new_order_df = self.hours_df[
-            self.hours_df["earn_code"] == "REG"
-            ].copy().drop_duplicates()
+        new_order_df = (
+            self.hours_df[self.hours_df["earn_code"] == "REG"].copy().drop_duplicates()
+        )
         new_order_df = new_order_df.groupby(
             self.hours_df.columns.tolist()[:-1],
             as_index=False,
         )["earning_hours"].sum()
         is_uu = new_order_df["JobECLS"] == "UU"
         is_vv = new_order_df["JobECLS"] == "VV"
-        union = ((is_uu | is_vv) & (new_order_df["earning_hours"] > 7.5))
-        non_union = (~(is_uu | is_vv) & (new_order_df["earning_hours"] > 8))
+        union = (is_uu | is_vv) & (new_order_df["earning_hours"] > 7.5)
+        non_union = ~(is_uu | is_vv) & (new_order_df["earning_hours"] > 8)
         final_df = new_order_df[(union | non_union)]
         if final_df.empty:
             return []
@@ -85,12 +86,9 @@ class HoursBreakdown:
             new_order_df["earn_code"] == "REG&OT"
         ].drop_duplicates()
         new_order_df = new_order_df.groupby(
-            self.hours_df.columns.tolist()[:-1],
-            as_index=False
+            self.hours_df.columns.tolist()[:-1], as_index=False
         )["earning_hours"].sum()
-        final_df = new_order_df[
-            ((new_order_df["earning_hours"] > 12))
-        ]
+        final_df = new_order_df[(new_order_df["earning_hours"] > 12)]
         if final_df.empty:
             return []
         return make_list(final_df["PacificEmail"].unique().tolist())
@@ -103,49 +101,43 @@ class HoursBreakdown:
         ].drop_duplicates()
         df["ts_entry_date"] = pd.to_datetime(df["ts_entry_date"])
         min_date = df["ts_entry_date"].dt.floor("D").min()
-        period_start = min_date - pd.to_timedelta(
-            min_date.weekday(), unit="D"
-        )
+        period_start = min_date - pd.to_timedelta(min_date.weekday(), unit="D")
         df["days_from_period_start"] = (
             df["ts_entry_date"].dt.floor("D") - period_start
         ).dt.days
         df = df[
-            (df["days_from_period_start"] >= 0) &
-            (df["days_from_period_start"] < 14)
+            (df["days_from_period_start"] >= 0) & (df["days_from_period_start"] < 14)
         ].copy()
         df["week_number"] = (df["days_from_period_start"] // 7) + 1
         weekly = (
             df.groupby(["Empl_ID", "week_number"], as_index=False)
-              .earning_hours.sum()
-              .rename(columns={"earning_hours": "hours_total"})
+            .earning_hours.sum()
+            .rename(columns={"earning_hours": "hours_total"})
         )
         result = weekly[weekly["hours_total"] > 40]
         if result.empty:
             return []
         return make_list(
-            df[df["Empl_ID"].isin(result["Empl_ID"])]["PacificEmail"].dropna().unique().tolist()
+            df[df["Empl_ID"].isin(result["Empl_ID"])]["PacificEmail"]
+            .dropna()
+            .unique()
+            .tolist()
         )
 
     def union_weekend_overtime(self) -> list[str]:
         """Return emails for union employees with 5+ unique REG days in a week."""
         df = self.hours_df.copy()
         df = df[
-            (df["earn_code"] == "REG") &
-            (df["JobECLS"].isin(["UU", "VV"]))
+            (df["earn_code"] == "REG") & (df["JobECLS"].isin(["UU", "VV"]))
         ].drop_duplicates()
         if df.empty:
             return []
         df["ts_entry_date"] = pd.to_datetime(df["ts_entry_date"]).dt.floor("D")
         min_date = df["ts_entry_date"].min()
-        period_start = min_date - pd.to_timedelta(
-            min_date.weekday(), unit="D"
-        )
-        df["days_from_period_start"] = (
-            df["ts_entry_date"] - period_start
-        ).dt.days
+        period_start = min_date - pd.to_timedelta(min_date.weekday(), unit="D")
+        df["days_from_period_start"] = (df["ts_entry_date"] - period_start).dt.days
         df = df[
-            (df["days_from_period_start"] >= 0) &
-            (df["days_from_period_start"] < 14)
+            (df["days_from_period_start"] >= 0) & (df["days_from_period_start"] < 14)
         ]
         if df.empty:
             return []
@@ -158,11 +150,11 @@ class HoursBreakdown:
         result = df[df["unique_reg_days"] > 5]
         if result.empty:
             return []
-        return make_list(
-            result["PacificEmail"].dropna().unique().tolist()
-        )
+        return make_list(result["PacificEmail"].dropna().unique().tolist())
+
     def seasonal_deteciton_type(self):
         pass
+
     def seasonal_deteciton_date(self):
         pass
 
@@ -170,22 +162,21 @@ class HoursBreakdown:
         """Incorrect earnings code on correct day(s)."""
         if not hol_list:
             return []
-        filtered_df = (
-            self.hours_df[self.hours_df["ts_entry_date"].isin(hol_list)]
-        )
+        filtered_df = self.hours_df[self.hours_df["ts_entry_date"].isin(hol_list)]
         if filtered_df.empty:
             # TODO: No entries on list is bad.
             return []
         # Exclude non benefit eligible.
-        holiday_eligible = ["OO","PP","UU","VV"]
+        holiday_eligible = ["OO", "PP", "UU", "VV"]
         filtered_df = filtered_df[filtered_df["JobECLS"].isin(holiday_eligible)]
         # Remove correct codes.
         filter_holiday = (
-            (filtered_df["earn_code"] == "HOL") |
-            (filtered_df["earn_code"] == "HLW") |
+            (filtered_df["earn_code"] == "HOL")
+            | (filtered_df["earn_code"] == "HLW")
+            |
             # People on LOA.
-            (filtered_df["earn_code"] == "DOC") |
-            (filtered_df["earn_code"] == "HCR")
+            (filtered_df["earn_code"] == "DOC")
+            | (filtered_df["earn_code"] == "HCR")
         )
         final_df = filtered_df[~filter_holiday]
         if final_df.empty:
@@ -194,9 +185,8 @@ class HoursBreakdown:
 
     def holiday_detection_date(self, hol_list: list) -> list[str]:
         """Holiday earnings code on normal day(s)."""
-        filter_holiday = (
-            (self.hours_df["earn_code"] == "HOL") |
-            (self.hours_df["earn_code"] == "HLW")
+        filter_holiday = (self.hours_df["earn_code"] == "HOL") | (
+            self.hours_df["earn_code"] == "HLW"
         )
         filtered_df = self.hours_df[filter_holiday]
         if filtered_df.empty:
