@@ -39,6 +39,3 @@ def test_attribute_type():
     pay_period = 15
     hours_breakdown = HoursBreakdown(hours_breakdown, active_empl, pay_period)
     assert isinstance(hours_breakdown.hours_df, pd.DataFrame)
-
-
-

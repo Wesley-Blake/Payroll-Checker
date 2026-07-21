@@ -27,7 +27,7 @@ def holidays_input() -> list[str]:
         if not holiday:
             break
     print(f"Holidays: {holiday_list}")
-    if (input("Is this correct? [Y/n] ").lower() or 'y') == 'y':
+    if (input("Is this correct? [Y/n] ").lower() or "y") == "y":
         return holiday_list
     holiday_list.clear()
     return holiday_list
@@ -46,14 +46,13 @@ def pay_period_check() -> int:
     pay_periods = [str(x) for x in range(1, 27)]
     while True:
         result = input("What pay period is it? ")
-        if (
-            input(f"{result} is this correct? [Y/n] ").lower() or 'y'
-        ) != 'y':
+        if (input(f"{result} is this correct? [Y/n] ").lower() or "y") != "y":
             continue
         if result in pay_periods:
             return int(result)
 
-#def loading_bar(length, index=1, prefix = '') -> callable:
+
+# def loading_bar(length, index=1, prefix = '') -> callable:
 #    print()
 #    def make_bar(length=length, index=index, prefix=prefix) -> str:
 #        BAR_LENGTH = 30
@@ -78,7 +77,9 @@ def collect_file(keyword: str) -> Path:
                     latest_file = file
             else:
                 latest_file = file
-    assert latest_file is not None, f"No file containing '{keyword}' found in {directory}."
+    assert latest_file is not None, (
+        f"No file containing '{keyword}' found in {directory}."
+    )
     return latest_file
 
 
@@ -102,7 +103,7 @@ def make_df(file: Path, pay_period: int, skip: bool = False) -> DataFrame:
 class WinEmail:
     def __init__(self):
         try:
-            self.outlook = win32.Dispatch('outlook.application')
+            self.outlook = win32.Dispatch("outlook.application")
         except Exception as e:
             raise RuntimeError(f"Error initializing Outlook: {e}") from e
 
@@ -110,16 +111,16 @@ class WinEmail:
         mail = None
         try:
             mail = self.outlook.CreateItem(0)
-            #mail.CC = cc
-            mail.BCC = '; '.join(bcc)
-            mail.Subject = f'Pay Period: BW{pay_period}'
+            # mail.CC = cc
+            mail.BCC = "; ".join(bcc)
+            mail.Subject = f"Pay Period: BW{pay_period}"
             config = configparser.ConfigParser()
-            config.read('.env')
-            attachment = Path(config['Payroll-Checker']['hours_guide'])
+            config.read(".env")
+            attachment = Path(config["Payroll-Checker"]["hours_guide"])
             if attachment.is_file():
                 mail.Attachments.Add(str(attachment))
             mail.Body = body
-            #mail.Display()
+            # mail.Display()
             mail.Send()
         finally:
             if mail is not None:

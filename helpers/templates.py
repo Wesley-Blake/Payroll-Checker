@@ -1,12 +1,12 @@
 from string import Template
 
 
-#NO_HOLIDAY_TEMPLATE = """\
-#Hi,
+# NO_HOLIDAY_TEMPLATE = """\
+# Hi,
 #
-#Friendly Reminder: Holiday / Holiday Worked was detected.
-#There wasn't a holiday this pay period.
-#"""
+# Friendly Reminder: Holiday / Holiday Worked was detected.
+# There wasn't a holiday this pay period.
+# """
 
 HOLIDAY_DATE_TEMPLATE = Template("""\
 Hi,
@@ -14,8 +14,7 @@ Hi,
 Friendly Reminder: Holiday / Holiday Worked was detected.
 Holiday and or Holiday Worked was reported on the incorrect day.
 ${list_o_holidays}
-"""
-)
+""")
 
 HOLIDAY_TYPE_TEMPLATE = Template("""\
 Hi,
@@ -23,8 +22,7 @@ Hi,
 Friendly Reminder: Holiday / Holiday Worked was detected.
 Holiday Pay doesn't reflect on the holiday.
 ${list_o_holidays}
-"""
-)
+""")
 
 NOT_STARTED_TEMPLATE = """\
 Hi,
@@ -99,11 +97,11 @@ Just a quick heads-up that you have employees whose timesheets are currently in 
 Thanks so much for your time and support!
 """
 
-#MANAGER_TEMPLATE = Template("""\n
-#Manager Notification:
-#You're receiving this email because ${length} of your employees have a timesheet item to review for the pay period ${PAY_PERIOD}.
-#They've been BCC'd on this message as a helpful reminder, so no action is needed from you at this time.
+# MANAGER_TEMPLATE = Template("""\n
+# Manager Notification:
+# You're receiving this email because ${length} of your employees have a timesheet item to review for the pay period ${PAY_PERIOD}.
+# They've been BCC'd on this message as a helpful reminder, so no action is needed from you at this time.
 #
-#Thanks so much, and have a great day!
-#"""
-#)
+# Thanks so much, and have a great day!
+# """
+# )
