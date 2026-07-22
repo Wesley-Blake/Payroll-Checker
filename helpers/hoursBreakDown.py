@@ -57,7 +57,7 @@ class HoursBreakdown:
         final_df = self.hours_df[self.hours_df["earn_code"].isin(stk_earn_codes)].copy()
         if final_df.empty:
             return []
-        return make_list(final_df["PacificEmail"].unique().tolist()), stk_earn_codes
+        return make_list(final_df["PacificEmail"].unique().tolist())
 
     def over_eight_hours(self) -> list[str]:
         """Return emails for employees with daily overtime on REG hours."""
@@ -88,7 +88,7 @@ class HoursBreakdown:
             }
         )
         new_order_df = new_order_df[
-            new_order_df["earn_code"] == "REG&OT"
+            new_order_df["earn_code"] == "OT2qual"
         ].drop_duplicates()
         new_order_df = new_order_df.groupby(
             self.hours_df.columns.tolist()[:-1], as_index=False
