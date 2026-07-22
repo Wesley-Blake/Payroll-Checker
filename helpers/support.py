@@ -1,4 +1,5 @@
 import configparser
+import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -6,6 +7,8 @@ import pandas as pd
 import validators
 import win32com.client as win32
 from pandas import DataFrame
+
+logger = logging.getLogger(__name__)
 
 
 def _get_repo_root() -> Path:
@@ -33,16 +36,24 @@ def load_holidays() -> list[str]:
 
 def make_list(check: list) -> list[str]:
     """Validate a list of emails and return the same list if valid."""
-    assert isinstance(check, list), "Input must be a list"
+    if not isinstance(check, list):
+        msg = "Input must be a list"
+        logger.error(msg)
+        raise AssertionError(msg)
     for i in check:
-        assert validators.email(i), f"Invalid email format: {i}"
+        if not validators.email(i):
+            msg = f"Invalid email format: {i}"
+            logger.error(msg)
+            raise AssertionError(msg)
     return check
 
 
 def pay_period_check(first_sunday: str) -> int:
     """Ask the user for the current pay period number (1-26)."""
     if not first_sunday:
-        raise ValueError("First Sunday date is not provided.")
+        msg = "First Sunday date is not provided."
+        logger.error(msg)
+        raise ValueError(msg)
     # If this fails program should fail.
     datetime.fromisoformat(first_sunday)
     pay_period = 0
@@ -56,11 +67,13 @@ def pay_period_check(first_sunday: str) -> int:
             datetime.now().year - current_date.year > 1
             or current_date.year - datetime.now().year > 1
         ):
-            raise ValueError(
-                "Check your dates in Env!" + f"{datetime.now()=} - {current_date=}"
-            )
+            msg = "Check your dates in Env!" + f"{datetime.now()=} - {current_date=}"
+            logger.error(msg)
+            raise ValueError(msg)
     if pay_period == 0:
-        raise ValueError("Unable to determine pay period.")
+        msg = "Unable to determine pay period."
+        logger.error(msg)
+        raise ValueError(msg)
     return pay_period
     # pay_periods = [str(x) for x in range(1, 27)]
     # while True:
@@ -87,7 +100,10 @@ def pay_period_check(first_sunday: str) -> int:
 
 def collect_file(keyword: str) -> Path:
     directory = Path.home() / "Downloads"
-    assert directory.is_dir(), f"{directory} is not a valid directory."
+    if not directory.is_dir():
+        msg = f"{directory} is not a valid directory."
+        logger.error(msg)
+        raise AssertionError(msg)
     latest_file = None
     for file in directory.iterdir():
         if keyword in file.name:
@@ -96,15 +112,19 @@ def collect_file(keyword: str) -> Path:
                     latest_file = file
             else:
                 latest_file = file
-    assert latest_file is not None, (
-        f"No file containing '{keyword}' found in {directory}."
-    )
+    if latest_file is None:
+        msg = f"No file containing '{keyword}' found in {directory}."
+        logger.error(msg)
+        raise AssertionError(msg)
     return latest_file
 
 
 def make_df(file: Path, pay_period: int, skip: bool = False) -> DataFrame:
     """Load a CSV into a DataFrame and filter by pay period when required."""
-    assert isinstance(file, Path), f"Bad file input type {type(file)=}"
+    if not isinstance(file, Path):
+        msg = f"Bad file input type {type(file)=}"
+        logger.error(msg)
+        raise AssertionError(msg)
     df = pd.read_csv(file)
     headers = df.columns
     if skip:
@@ -113,10 +133,12 @@ def make_df(file: Path, pay_period: int, skip: bool = False) -> DataFrame:
         if "pay" in header.lower() and "no" in header.lower():
             if df[header].iloc[0] == pay_period:
                 return df
-    raise ValueError(
+    msg = (
         f"Warning: No matching pay period found in {file}. "
         f"Expected pay period: {pay_period}."
     )
+    logger.error(msg)
+    raise ValueError(msg)
 
 
 class WinEmail:
@@ -124,13 +146,17 @@ class WinEmail:
         try:
             self.outlook = win32.Dispatch("outlook.application")
         except Exception as e:
-            raise RuntimeError(f"Error initializing Outlook: {e}") from e
+            msg = f"Error initializing Outlook: {e}"
+            logger.error(msg)
+            raise RuntimeError(msg) from e
         config = configparser.ConfigParser()
         config.read(".env")
         if config.has_section("Payroll-Checker"):
             self.attachment = Path(config["Payroll-Checker"]["hours_guide"])
         else:
-            raise ValueError("Invalid .env file format.")
+            msg = "Invalid .env file format."
+            logger.error(msg)
+            raise ValueError(msg)
 
     def send_email(
         self, bcc: list[str], pay_period: str, body: str, dry_run: bool = False
@@ -150,4 +176,6 @@ class WinEmail:
                 mail.Send()
             del mail
         except Exception as e:
-            raise RuntimeError(f"Error sending email: {e}") from e
+            msg = f"Error sending email: {e}"
+            logger.error(msg)
+            raise RuntimeError(msg) from e
