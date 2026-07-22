@@ -8,34 +8,26 @@ import win32com.client as win32
 from pandas import DataFrame
 
 
-def holidays_input() -> list[str]:
-    """Prompt the user for holiday dates in YYYY-MM-DD format."""
-    # Refactor to use holidays from .env
-    # This should be headless.
+def _get_repo_root() -> Path:
+    """Return the repository root based on this module's location."""
+    return Path(__file__).resolve().parents[1]
+
+
+def load_holidays() -> list[str]:
+    """Load holiday dates from the repository .env file."""
+    config = configparser.ConfigParser()
+    config.read(_get_repo_root() / ".env")
+    holidays_value = config.get("Payroll-Checker", "holidays", fallback="")
+    if not holidays_value:
+        return []
+
     holiday_list: list[str] = []
-    while True:
-        holiday = input("Enter 1 holiday: [%YYYY-%mm-%dd] ")
-        try:
-            # date = (
-            #    datetime.strptime(
-            #        holiday,
-            #        "%Y%m%d",
-            #    )
-            #    .date()
-            #    .isoformat()
-            # )
-            datetime.fromisoformat(holiday)
-            holiday_list.append(holiday)
-        except ValueError:
-            # log invalid date format
-            # close program or exit due to invalid date format
-            pass
+    for raw_holiday in holidays_value.split(","):
+        holiday = raw_holiday.strip()
         if not holiday:
-            break
-    print(f"Holidays: {holiday_list}")
-    if (input("Is this correct? [Y/n] ").lower() or "y") == "y":
-        return holiday_list
-    holiday_list.clear()
+            continue
+        datetime.fromisoformat(holiday)
+        holiday_list.append(holiday)
     return holiday_list
 
 

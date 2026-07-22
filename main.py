@@ -1,9 +1,5 @@
 # TODO: new logger for failures below
 # TODO: file collection
-# TODO: create objects
-# TODO: trasnform data
-# TODO: send emails
-# TODO: pay period detector - json?
 # TODO: pyautogui argos
 # TODO: windows task schedule
 import argparse
@@ -14,7 +10,7 @@ from helpers.hoursBreakDown import HoursBreakdown
 from helpers.overlapping import OverlappingHours
 from helpers.reporter import Reporter
 from helpers.status import NotStarted, Pending
-from helpers.support import WinEmail, collect_file, holidays_input, pay_period_check
+from helpers.support import WinEmail, collect_file, load_holidays, pay_period_check
 from helpers.templates import (
     HOLIDAY_DATE_TEMPLATE,
     HOLIDAY_TYPE_TEMPLATE,
@@ -55,23 +51,24 @@ pending = Pending(collect_file("Comments"), PAY_PERIOD)
 emailer = WinEmail()
 
 # Holiday Detections
-list_o_holidays = holidays_input()
-if result_holiday_type := hours_breakdown.holiday_detection_type(list_o_holidays):
-    emailer.send_email(
-        result_holiday_type,
-        PAY_PERIOD,
-        HOLIDAY_TYPE_TEMPLATE.substitute(list_o_holidays=", ".join(list_o_holidays))
-        + TIMESHEET_LINK,
-        dry_run=args.dry_run,
-    )
-if result_holiday_date := hours_breakdown.holiday_detection_date(list_o_holidays):
-    emailer.send_email(
-        result_holiday_date,
-        PAY_PERIOD,
-        HOLIDAY_DATE_TEMPLATE.substitute(list_o_holidays=", ".join(list_o_holidays))
-        + TIMESHEET_LINK,
-        dry_run=args.dry_run,
-    )
+list_o_holidays = load_holidays()
+if list_o_holidays:
+    if result_holiday_type := hours_breakdown.holiday_detection_type(list_o_holidays):
+        emailer.send_email(
+            result_holiday_type,
+            PAY_PERIOD,
+            HOLIDAY_TYPE_TEMPLATE.substitute(list_o_holidays=", ".join(list_o_holidays))
+            + TIMESHEET_LINK,
+            dry_run=args.dry_run,
+        )
+    if result_holiday_date := hours_breakdown.holiday_detection_date(list_o_holidays):
+        emailer.send_email(
+            result_holiday_date,
+            PAY_PERIOD,
+            HOLIDAY_DATE_TEMPLATE.substitute(list_o_holidays=", ".join(list_o_holidays))
+            + TIMESHEET_LINK,
+            dry_run=args.dry_run,
+        )
 
 # Incorrect Earn Code Check
 if result_incorrect_earn_code := hours_breakdown.incorrect_earn_code():
