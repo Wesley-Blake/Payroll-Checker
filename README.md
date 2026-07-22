@@ -30,7 +30,13 @@ Outlook. It also generates status charts and CSV reports for the pay period.
 - Windows, with Outlook installed and configured (uses `win32com`/Outlook COM
   automation to send mail).
 - Python 3.11+ (uses `match`-free modern type hints like `list[str]`).
-- Packages: `pandas`, `matplotlib`, `validators`, `pywin32`.
+- Packages: `pandas`, `matplotlib`, `validators`, `pywin32` (see `pyproject.toml`).
+
+Install with:
+
+```sh
+pip install -e .[dev]
+```
 
 ## Configuration
 
@@ -64,14 +70,15 @@ python main.py --dry-run  # display drafted emails instead of sending
 ```
 main.py                   # entry point / check orchestration
 helpers/
-  hoursBreakDown.py        # earn code, overtime, holiday checks
+  hours_breakdown.py       # earn code, overtime, holiday checks
   overlapping.py           # overlapping timesheet entry check
   status.py                # not-started / pending checks + status charts
   reporter.py               # overtime / union meal / weekend OT CSV reports
   support.py                # config loading, file discovery, Outlook email, pay period math
   templates.py              # email body templates
 tests/
-  test_hoursBreakDown.py
+  test_hours_breakdown.py
+pyproject.toml            # project metadata + pinned dependencies
 ```
 
 ## Testing
@@ -99,4 +106,3 @@ pytest
 - [ ] Wire up `seasonal_days` from `.env` (currently unused).
 - [ ] Restore/implement the commented-out `zero_hours_list` check in
       `helpers/status.py`.
-- [ ] Add a `requirements.txt` / `pyproject.toml` to pin dependencies.

@@ -6,7 +6,7 @@ import argparse
 import configparser
 from pathlib import Path
 
-from helpers.hoursBreakDown import HoursBreakdown
+from helpers.hours_breakdown import HoursBreakdown
 from helpers.overlapping import OverlappingHours
 from helpers.reporter import Reporter
 from helpers.status import NotStarted, Pending
