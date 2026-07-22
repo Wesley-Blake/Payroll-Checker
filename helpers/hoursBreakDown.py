@@ -49,11 +49,15 @@ class HoursBreakdown:
         assert isinstance(self.hours_df, DataFrame)
 
     def incorrect_earn_code(self) -> list[str]:
-        """Return emails for employees with STK earn codes ."""
-        final_df = self.hours_df[self.hours_df["earn_code"].isin(["SHD"])].copy()
+        """
+        Return emails for employees with STK earn codes.
+        current list: SHD
+        """
+        stk_earn_codes = ["SHD"]
+        final_df = self.hours_df[self.hours_df["earn_code"].isin(stk_earn_codes)].copy()
         if final_df.empty:
             return []
-        return make_list(final_df["PacificEmail"].unique().tolist())
+        return make_list(final_df["PacificEmail"].unique().tolist()), stk_earn_codes
 
     def over_eight_hours(self) -> list[str]:
         """Return emails for employees with daily overtime on REG hours."""
@@ -78,8 +82,9 @@ class HoursBreakdown:
         new_order_df = self.hours_df.copy()
         new_order_df.loc[:, "earn_code"] = new_order_df["earn_code"].replace(
             {
-                "REG": "REG&OT",
-                "OT": "REG&OT",
+                "REG": "OT2qual",
+                "OT": "OT2qual",
+                "HLW": "OT2qual",
             }
         )
         new_order_df = new_order_df[
@@ -100,6 +105,7 @@ class HoursBreakdown:
             (df["earn_code"] == "REG") & (~df["JobECLS"].isin(["UU", "VV"]))
         ].drop_duplicates()
         df["ts_entry_date"] = pd.to_datetime(df["ts_entry_date"])
+        # Find first day of pay period (should be Monday)
         min_date = df["ts_entry_date"].dt.floor("D").min()
         period_start = min_date - pd.to_timedelta(min_date.weekday(), unit="D")
         df["days_from_period_start"] = (
@@ -108,6 +114,7 @@ class HoursBreakdown:
         df = df[
             (df["days_from_period_start"] >= 0) & (df["days_from_period_start"] < 14)
         ].copy()
+        # Get week number (first week and second week.)
         df["week_number"] = (df["days_from_period_start"] // 7) + 1
         weekly = (
             df.groupby(["Empl_ID", "week_number"], as_index=False)
@@ -160,11 +167,11 @@ class HoursBreakdown:
 
     def holiday_detection_type(self, hol_list: list) -> list[str]:
         """Incorrect earnings code on correct day(s)."""
+        # Refactor, use holidays from .env instead of passing list directly.
         if not hol_list:
             return []
         filtered_df = self.hours_df[self.hours_df["ts_entry_date"].isin(hol_list)]
         if filtered_df.empty:
-            # TODO: No entries on list is bad.
             return []
         # Exclude non benefit eligible.
         holiday_eligible = ["OO", "PP", "UU", "VV"]
@@ -185,6 +192,8 @@ class HoursBreakdown:
 
     def holiday_detection_date(self, hol_list: list) -> list[str]:
         """Holiday earnings code on normal day(s)."""
+        # Refactor, use holidays from .env instead of passing list directly.
+        # This should always run, if there are holiday codes on normal days, regardless of the holiday list.
         filter_holiday = (self.hours_df["earn_code"] == "HOL") | (
             self.hours_df["earn_code"] == "HLW"
         )

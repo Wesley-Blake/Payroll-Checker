@@ -1,28 +1,34 @@
-from pathlib import Path
-from datetime import datetime
 import configparser
+from datetime import datetime, timedelta
+from pathlib import Path
+
 import pandas as pd
-from pandas import DataFrame
 import validators
 import win32com.client as win32
+from pandas import DataFrame
 
 
 def holidays_input() -> list[str]:
     """Prompt the user for holiday dates in YYYY-MM-DD format."""
+    # Refactor to use holidays from .env
+    # This should be headless.
     holiday_list: list[str] = []
     while True:
         holiday = input("Enter 1 holiday: [%YYYY-%mm-%dd] ")
         try:
-            date = (
-                datetime.strptime(
-                    holiday,
-                    "%Y-%m-%d",
-                )
-                .date()
-                .isoformat()
-            )
-            holiday_list.append(date)
+            # date = (
+            #    datetime.strptime(
+            #        holiday,
+            #        "%Y%m%d",
+            #    )
+            #    .date()
+            #    .isoformat()
+            # )
+            datetime.fromisoformat(holiday)
+            holiday_list.append(holiday)
         except ValueError:
+            # log invalid date format
+            # close program or exit due to invalid date format
             pass
         if not holiday:
             break
@@ -41,15 +47,36 @@ def make_list(check: list) -> list[str]:
     return check
 
 
-def pay_period_check() -> int:
+def pay_period_check(first_sunday: str) -> int:
     """Ask the user for the current pay period number (1-26)."""
-    pay_periods = [str(x) for x in range(1, 27)]
-    while True:
-        result = input("What pay period is it? ")
-        if (input(f"{result} is this correct? [Y/n] ").lower() or "y") != "y":
-            continue
-        if result in pay_periods:
-            return int(result)
+    if not first_sunday:
+        raise ValueError("First Sunday date is not provided.")
+    # If this fails program should fail.
+    datetime.fromisoformat(first_sunday)
+    pay_period = 0
+    current_date = datetime.fromisoformat(first_sunday)
+    # This loop should be a negative value. past - present
+    while (current_date - datetime.now()).days < 0:
+        pay_period += 1
+        current_date += timedelta(days=14)
+        # Pay years can spill over, but anything greater than 1 is wrong.
+        if (
+            datetime.now().year - current_date.year > 1
+            or current_date.year - datetime.now().year > 1
+        ):
+            raise ValueError(
+                "Check your dates in Env!" + f"{datetime.now()=} - {current_date=}"
+            )
+    if pay_period == 0:
+        raise ValueError("Unable to determine pay period.")
+    return pay_period
+    # pay_periods = [str(x) for x in range(1, 27)]
+    # while True:
+    #    result = input("What pay period is it? ")
+    #    if (input(f"{result} is this correct? [Y/n] ").lower() or "y") != "y":
+    #        continue
+    #    if result in pay_periods:
+    #        return int(result)
 
 
 # def loading_bar(length, index=1, prefix = '') -> callable:
@@ -106,22 +133,29 @@ class WinEmail:
             self.outlook = win32.Dispatch("outlook.application")
         except Exception as e:
             raise RuntimeError(f"Error initializing Outlook: {e}") from e
+        config = configparser.ConfigParser()
+        config.read(".env")
+        if config.has_section("Payroll-Checker"):
+            self.attachment = Path(config["Payroll-Checker"]["hours_guide"])
+        else:
+            raise ValueError("Invalid .env file format.")
 
-    def send_email(self, bcc: list[str], pay_period: str, body: str) -> None:
+    def send_email(
+        self, bcc: list[str], pay_period: str, body: str, dry_run: bool = False
+    ) -> None:
         mail = None
         try:
             mail = self.outlook.CreateItem(0)
             # mail.CC = cc
             mail.BCC = "; ".join(bcc)
             mail.Subject = f"Pay Period: BW{pay_period}"
-            config = configparser.ConfigParser()
-            config.read(".env")
-            attachment = Path(config["Payroll-Checker"]["hours_guide"])
-            if attachment.is_file():
-                mail.Attachments.Add(str(attachment))
+            if self.attachment.is_file():
+                mail.Attachments.Add(str(self.attachment))
             mail.Body = body
-            # mail.Display()
-            mail.Send()
-        finally:
-            if mail is not None:
-                del mail
+            if dry_run:
+                mail.Display()
+            else:
+                mail.Send()
+            del mail
+        except Exception as e:
+            raise RuntimeError(f"Error sending email: {e}") from e

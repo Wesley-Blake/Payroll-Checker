@@ -1,6 +1,5 @@
 from string import Template
 
-
 # NO_HOLIDAY_TEMPLATE = """\
 # Hi,
 #
@@ -35,7 +34,7 @@ If you haven't worked, then you wouldn't need to do anyhting, but if you have wo
 INCORRECT_EARN_CODE_TEMPLATE = """\
 Hi,
 
-Friendly Reminder: Incorrect Earn Code Detected
+Friendly Reminder: Incorrect Earn Code Detected see below list.
 [ SHD ]
 
 """

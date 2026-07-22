@@ -1,4 +1,6 @@
 # Guidelines For Refactor.
+## To Be Implemented.
+### Code Guide.
 1. There are 4 reports the will display information.
     1. status of the timesheet
     2. overlapping hours
@@ -14,11 +16,11 @@
     * Each method should check for 1 specific type of error and return a list of emails (unique)
 4. Function to determine current pay period.
 
-# Pay Schedule
+### Pay Schedule
 1. Payroll reports every 2 weeks.
 2. All reports are limited to those two weeks.
 
-# Earn Code Rules BY Employee Type (ECLS)
+### Earn Code Rules BY Employee Type (ECLS)
 1. REG or Regular Hours.
     1. OO, PP, WW
         1. should be 40 hours in a week or 80 in a pay period.
@@ -48,8 +50,11 @@
     * Same rules as HOL.
 6. OT or Overtime.
     * Only occures after the dailey limit or weekly limit of REG.
+    * UU and VV only have to work a minumum of 1 minute for 5 days to get weekend Overtime.
 7. OT2 or Overtime 2x.
     * Only occures after the sum of REG, HLW, and OT hit 12 hours in a single day.
+    * UU and VV
+        1. OT2 when working more than 7.5 hours on the 6th and 7th consecutive days.
 8. SHF or Shift Differential.
     * Only UU and VV get this code.
     * Can only happen after 1800 or 6pm.
