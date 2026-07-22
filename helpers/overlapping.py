@@ -1,6 +1,10 @@
+import logging
+
 from pandas import DataFrame
 from pathlib import Path
 from helpers.support import make_df, make_list
+
+logger = logging.getLogger(__name__)
 
 
 class OverlappingHours:
@@ -15,6 +19,14 @@ class OverlappingHours:
                 "Empl_Email",
             ]
         ].drop_duplicates()
+        # CSV exports sometimes pad the file with fully blank trailing rows.
+        rows_before = len(self.df)
+        self.df = self.df.dropna(subset=["earn_code", "Empl_Email"])
+        rows_dropped = rows_before - len(self.df)
+        if rows_dropped:
+            logger.warning(
+                "Dropped %d blank/incomplete row(s) from %s", rows_dropped, file
+            )
 
     def overlapping_list(self) -> list[str]:
         """Return emails for employees with overlapping time entries."""
