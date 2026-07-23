@@ -61,15 +61,15 @@ seasonal_days =
 ## Usage
 
 ```sh
-python main.py            # run checks and send emails
-python main.py --dry-run  # display drafted emails instead of sending
+python -m src            # run checks and send emails
+python -m src --dry-run  # display drafted emails instead of sending
 ```
 
 ## Project structure
 
 ```
-main.py                   # entry point / check orchestration
-helpers/
+src/
+  __main__.py             # entry point / check orchestration
   hours_breakdown.py       # earn code, overtime, holiday checks
   overlapping.py           # overlapping timesheet entry check
   status.py                # not-started / pending checks + status charts
@@ -89,8 +89,8 @@ pytest
 
 ## To do
 
-- [ ] Add a proper logger for failures (see `main.py` header TODO) — logging
-      is only partially wired up (`helpers/support.py`).
+- [ ] Add a proper logger for failures (see `__main__.py` header TODO) — logging
+      is only partially wired up (`src/support.py`).
 - [ ] Automated file collection (e.g. pulling exports instead of relying on
       manual downloads).
 - [ ] `pyautogui`-based automation for steps that still require manual
