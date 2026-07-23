@@ -2,8 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 from pandas import DataFrame
-
-from .support import make_df, make_list
+from support import make_df, make_list
 
 
 class HoursBreakdown:

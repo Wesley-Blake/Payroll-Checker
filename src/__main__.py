@@ -6,12 +6,12 @@ import argparse
 import configparser
 from pathlib import Path
 
-from helpers.hours_breakdown import HoursBreakdown
-from helpers.overlapping import OverlappingHours
-from helpers.reporter import Reporter
-from helpers.status import NotStarted, Pending
-from helpers.support import WinEmail, collect_file, load_holidays, pay_period_check
-from helpers.templates import (
+from hours_breakdown import HoursBreakdown
+from overlapping import OverlappingHours
+from reporter import Reporter
+from status import NotStarted, Pending
+from support import WinEmail, collect_file, load_holidays, pay_period_check
+from templates import (
     HOLIDAY_DATE_TEMPLATE,
     HOLIDAY_TYPE_TEMPLATE,
     INCORRECT_EARN_CODE_TEMPLATE,
