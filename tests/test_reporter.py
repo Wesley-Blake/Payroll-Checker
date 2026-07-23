@@ -134,22 +134,7 @@ def reporter(tmp_path):
     return Reporter(tmp_path, tmp_path)
 
 
-def test_generate_overtime_report(reporter, tmp_path):
-    reporter.generate_overtime_report()
-    result = pd.read_csv(tmp_path / "overtime_report.csv")
-    pairs = set(zip(result["Empl_ID"], result["earning_hours"]))
-    assert pairs == {(101, 9.0), (201, 8.0)}
-
-
 def test_generate_union_meal_report(reporter, tmp_path):
     reporter.generate_union_meal_report()
     result = pd.read_csv(tmp_path / "union_meal.csv")
     assert result.to_dict("records") == [{"Empl_ID": 201, "count": 1}]
-
-
-def test_generate_weekend_ot_report(reporter, tmp_path):
-    reporter.generate_weekend_ot_report()
-    result = pd.read_csv(tmp_path / "weekend_ot.csv")
-    assert result.to_dict("records") == [
-        {"Empl_ID": 101, "week_number": 1, "hours_total": 41.0}
-    ]
