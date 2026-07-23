@@ -1,11 +1,9 @@
-from pathlib import Path
 from datetime import date
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 
-try:
-    from helpers.support import make_df, make_list
-except ImportError:
-    from support import make_df, make_list, collect_file, pay_period_check
+from support import collect_file, make_df, make_list, pay_period_check
 
 
 class NotStarted:
