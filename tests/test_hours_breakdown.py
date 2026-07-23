@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from helpers.hours_breakdown import HoursBreakdown
+from src.hours_breakdown import HoursBreakdown
 
 
 def test_pass_init():

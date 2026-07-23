@@ -7,7 +7,7 @@ matplotlib.use("Agg")
 import pandas as pd
 import pytest
 
-from helpers.status import NotStarted, Pending
+from src.status import NotStarted, Pending
 
 NOT_STARTED_FIXTURE = (
     Path().cwd() / "tests" / "examples" / "Empls_who_not_yet_started_WTE_Timesheets.csv"

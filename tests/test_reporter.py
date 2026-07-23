@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from helpers.reporter import Reporter
+from src.reporter import Reporter
 
 REPORT_PREFIX = "ts_break_down_in_out_hours_by_earn_code CSV Report"
 
@@ -30,15 +30,29 @@ def test_find_latest_timesheet_csv_raises_when_no_match(tmp_path):
 def test_find_latest_timesheet_csv_picks_most_recent(tmp_path):
     older = _write_timesheet_csv(
         tmp_path,
-        [{"Empl_ID": 1, "JobECLS": "OO", "earn_code": "REG",
-          "ts_entry_date": "2026-06-01", "earning_hours": 1}],
+        [
+            {
+                "Empl_ID": 1,
+                "JobECLS": "OO",
+                "earn_code": "REG",
+                "ts_entry_date": "2026-06-01",
+                "earning_hours": 1,
+            }
+        ],
         name=f"{REPORT_PREFIX} old.csv",
     )
     time.sleep(0.05)
     newer = _write_timesheet_csv(
         tmp_path,
-        [{"Empl_ID": 2, "JobECLS": "OO", "earn_code": "REG",
-          "ts_entry_date": "2026-06-01", "earning_hours": 2}],
+        [
+            {
+                "Empl_ID": 2,
+                "JobECLS": "OO",
+                "earn_code": "REG",
+                "ts_entry_date": "2026-06-01",
+                "earning_hours": 2,
+            }
+        ],
         name=f"{REPORT_PREFIX} new.csv",
     )
     reporter = Reporter(tmp_path, tmp_path)
@@ -56,25 +70,65 @@ def reporter(tmp_path):
     rows = [
         # Non-union employee: one day over 8 hours (overtime + contributes
         # to a >40 hour week for weekend OT).
-        {"Empl_ID": 101, "JobECLS": "OO", "earn_code": "REG",
-         "ts_entry_date": "2026-06-01", "earning_hours": 9},
-        {"Empl_ID": 101, "JobECLS": "OO", "earn_code": "REG",
-         "ts_entry_date": "2026-06-02", "earning_hours": 8},
-        {"Empl_ID": 101, "JobECLS": "OO", "earn_code": "REG",
-         "ts_entry_date": "2026-06-03", "earning_hours": 8},
-        {"Empl_ID": 101, "JobECLS": "OO", "earn_code": "REG",
-         "ts_entry_date": "2026-06-04", "earning_hours": 8},
-        {"Empl_ID": 101, "JobECLS": "OO", "earn_code": "REG",
-         "ts_entry_date": "2026-06-05", "earning_hours": 8},
+        {
+            "Empl_ID": 101,
+            "JobECLS": "OO",
+            "earn_code": "REG",
+            "ts_entry_date": "2026-06-01",
+            "earning_hours": 9,
+        },
+        {
+            "Empl_ID": 101,
+            "JobECLS": "OO",
+            "earn_code": "REG",
+            "ts_entry_date": "2026-06-02",
+            "earning_hours": 8,
+        },
+        {
+            "Empl_ID": 101,
+            "JobECLS": "OO",
+            "earn_code": "REG",
+            "ts_entry_date": "2026-06-03",
+            "earning_hours": 8,
+        },
+        {
+            "Empl_ID": 101,
+            "JobECLS": "OO",
+            "earn_code": "REG",
+            "ts_entry_date": "2026-06-04",
+            "earning_hours": 8,
+        },
+        {
+            "Empl_ID": 101,
+            "JobECLS": "OO",
+            "earn_code": "REG",
+            "ts_entry_date": "2026-06-05",
+            "earning_hours": 8,
+        },
         # Union employee: 8 REG hours (over the 7.5 union threshold) plus
         # 1 OT hour, totalling a 9-hour day (qualifies for a union meal).
-        {"Empl_ID": 201, "JobECLS": "UU", "earn_code": "REG",
-         "ts_entry_date": "2026-06-03", "earning_hours": 8},
-        {"Empl_ID": 201, "JobECLS": "UU", "earn_code": "OT",
-         "ts_entry_date": "2026-06-03", "earning_hours": 1},
+        {
+            "Empl_ID": 201,
+            "JobECLS": "UU",
+            "earn_code": "REG",
+            "ts_entry_date": "2026-06-03",
+            "earning_hours": 8,
+        },
+        {
+            "Empl_ID": 201,
+            "JobECLS": "UU",
+            "earn_code": "OT",
+            "ts_entry_date": "2026-06-03",
+            "earning_hours": 1,
+        },
         # Non-union employee: exactly 8 hours, no thresholds crossed.
-        {"Empl_ID": 301, "JobECLS": "OO", "earn_code": "REG",
-         "ts_entry_date": "2026-06-01", "earning_hours": 8},
+        {
+            "Empl_ID": 301,
+            "JobECLS": "OO",
+            "earn_code": "REG",
+            "ts_entry_date": "2026-06-01",
+            "earning_hours": 8,
+        },
     ]
     _write_timesheet_csv(tmp_path, rows)
     return Reporter(tmp_path, tmp_path)

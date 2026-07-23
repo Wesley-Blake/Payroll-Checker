@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from helpers.overlapping import OverlappingHours
+from src.overlapping import OverlappingHours
 
 FIXTURE = Path().cwd() / "tests" / "examples" / "Empls_with_Overlapping_Hours.csv"
 PAY_PERIOD = 16
@@ -36,7 +36,7 @@ def test_overlapping_list_flags_non_whitelisted_earn_codes():
 
 
 def test_init_logs_warning_when_blank_rows_dropped(caplog):
-    with caplog.at_level("WARNING", logger="helpers.overlapping"):
+    with caplog.at_level("WARNING", logger="src.overlapping"):
         OverlappingHours(FIXTURE, PAY_PERIOD)
     assert len(caplog.records) == 1
     assert "Dropped 1 blank/incomplete row(s)" in caplog.records[0].message
@@ -52,7 +52,7 @@ def test_init_does_not_log_when_no_blank_rows(tmp_path, caplog):
             "Empl_Email": ["a@example.com", "a@example.com"],
         }
     ).to_csv(csv_path, index=False)
-    with caplog.at_level("WARNING", logger="helpers.overlapping"):
+    with caplog.at_level("WARNING", logger="src.overlapping"):
         OverlappingHours(csv_path, PAY_PERIOD)
     assert caplog.records == []
 

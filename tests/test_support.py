@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from helpers import support
+from src import support
 
 
 # ---------------------------------------------------------------------------
@@ -162,8 +162,6 @@ def test_load_holidays_returns_empty_when_missing_section(tmp_path, monkeypatch)
 
 
 def test_load_holidays_returns_empty_when_value_blank(tmp_path, monkeypatch):
-    (tmp_path / ".env").write_text(
-        "[Payroll-Checker]\nholidays =\n", encoding="utf-8"
-    )
+    (tmp_path / ".env").write_text("[Payroll-Checker]\nholidays =\n", encoding="utf-8")
     monkeypatch.setattr(support, "_get_repo_root", lambda: tmp_path)
     assert support.load_holidays() == []

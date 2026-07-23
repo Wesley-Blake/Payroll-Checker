@@ -1,6 +1,6 @@
 from string import Template
 
-from helpers import templates
+from src import templates
 
 PLAIN_TEMPLATES = [
     "NOT_STARTED_TEMPLATE",
