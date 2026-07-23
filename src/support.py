@@ -119,6 +119,12 @@ def collect_file(keyword: str) -> Path:
     return latest_file
 
 
+def save_df_to_downloads(df: DataFrame, filename: str) -> None:
+    """Save a DataFrame as a CSV in the user's Downloads folder."""
+    output_path = Path.home() / "Downloads" / filename
+    df.to_csv(output_path, index=False)
+
+
 def make_df(file: Path, pay_period: int, skip: bool = False) -> DataFrame:
     """Load a CSV into a DataFrame and filter by pay period when required."""
     if not isinstance(file, Path):

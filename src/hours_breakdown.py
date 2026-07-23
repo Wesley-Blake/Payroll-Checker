@@ -2,7 +2,8 @@ from pathlib import Path
 
 import pandas as pd
 from pandas import DataFrame
-from support import make_df, make_list
+
+from support import make_df, make_list, save_df_to_downloads
 
 
 class HoursBreakdown:
@@ -54,6 +55,7 @@ class HoursBreakdown:
         """
         stk_earn_codes = ["SHD"]
         final_df = self.hours_df[self.hours_df["earn_code"].isin(stk_earn_codes)].copy()
+        save_df_to_downloads(final_df, "incorrect_earn_code.csv")
         if final_df.empty:
             return []
         return make_list(final_df["PacificEmail"].unique().tolist())
@@ -72,6 +74,7 @@ class HoursBreakdown:
         union = (is_uu | is_vv) & (new_order_df["earning_hours"] > 7.5)
         non_union = ~(is_uu | is_vv) & (new_order_df["earning_hours"] > 8)
         final_df = new_order_df[(union | non_union)]
+        save_df_to_downloads(final_df, "over_eight_hours.csv")
         if final_df.empty:
             return []
         return make_list(final_df["PacificEmail"].unique().tolist())
@@ -93,6 +96,7 @@ class HoursBreakdown:
             self.hours_df.columns.tolist()[:-1], as_index=False
         )["earning_hours"].sum()
         final_df = new_order_df[(new_order_df["earning_hours"] > 12)]
+        save_df_to_downloads(final_df, "over_twelve_hours.csv")
         if final_df.empty:
             return []
         return make_list(final_df["PacificEmail"].unique().tolist())
@@ -121,14 +125,11 @@ class HoursBreakdown:
             .rename(columns={"earning_hours": "hours_total"})
         )
         result = weekly[weekly["hours_total"] > 40]
-        if result.empty:
+        final_df = df[df["Empl_ID"].isin(result["Empl_ID"])]
+        save_df_to_downloads(final_df, "weekend_overtime.csv")
+        if final_df.empty:
             return []
-        return make_list(
-            df[df["Empl_ID"].isin(result["Empl_ID"])]["PacificEmail"]
-            .dropna()
-            .unique()
-            .tolist()
-        )
+        return make_list(final_df["PacificEmail"].dropna().unique().tolist())
 
     def union_weekend_overtime(self) -> list[str]:
         """Return emails for union employees with 5+ unique REG days in a week."""
@@ -154,6 +155,7 @@ class HoursBreakdown:
         )["ts_entry_date"].nunique()
         df = df.rename(columns={"ts_entry_date": "unique_reg_days"})
         result = df[df["unique_reg_days"] > 5]
+        save_df_to_downloads(result, "union_weekend_overtime.csv")
         if result.empty:
             return []
         return make_list(result["PacificEmail"].dropna().unique().tolist())
@@ -185,6 +187,7 @@ class HoursBreakdown:
             | (filtered_df["earn_code"] == "HCR")
         )
         final_df = filtered_df[~filter_holiday]
+        save_df_to_downloads(final_df, "holiday_detection_type.csv")
         if final_df.empty:
             return []
         return make_list(final_df["PacificEmail"].unique().tolist())
@@ -202,6 +205,7 @@ class HoursBreakdown:
         final_df = filtered_df
         if hol_list:
             final_df = filtered_df[~filtered_df["ts_entry_date"].isin(hol_list)]
+        save_df_to_downloads(final_df, "holiday_detection_date.csv")
         if final_df.empty:
             return []
         return make_list(final_df["PacificEmail"].unique().tolist())

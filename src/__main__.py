@@ -154,6 +154,4 @@ pending.plot_timesheet_statuses_by_job_ecls(
 
 downloads: Path = Path.home() / "Downloads"
 reporter_instance: Reporter = Reporter(downloads, downloads)
-reporter_instance.generate_overtime_report()
 reporter_instance.generate_union_meal_report()
-reporter_instance.generate_weekend_ot_report()

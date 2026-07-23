@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 
 from pandas import DataFrame
-from support import make_df, make_list
+from support import make_df, make_list, save_df_to_downloads
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +32,7 @@ class OverlappingHours:
         """Return emails for employees with overlapping time entries."""
         white_list = ["REG", "SHF", "HOL", "HLW"]
         final_df = self.df[~self.df["earn_code"].isin(white_list)]
+        save_df_to_downloads(final_df, "overlapping_list.csv")
         if final_df.empty:
             return []
         return make_list(final_df["Empl_Email"].unique().tolist())
