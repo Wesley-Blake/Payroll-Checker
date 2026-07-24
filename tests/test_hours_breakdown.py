@@ -24,7 +24,10 @@ def test_fail_init_file_not_found():
 def test_fail_init_file_pay_period():
     with pytest.raises(ValueError):
         hours_breakdown = (
-            Path().cwd() / "tests" / "examples" / "ts_break_down_in_out_hours.csv"
+            Path().cwd()
+            / "tests"
+            / "examples"
+            / "ts_break_down_in_out_hours.csv"
         )
         active_empl = Path().cwd() / "tests" / "examples" / "active_empl.csv"
         pay_period = 12
