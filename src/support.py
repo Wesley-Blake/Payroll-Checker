@@ -165,8 +165,15 @@ class WinEmail:
             raise ValueError(msg)
 
     def send_email(
-        self, bcc: list[str], pay_period: str, body: str, dry_run: bool = False
+        self,
+        bcc: list[str],
+        pay_period: str,
+        body: str,
+        dry_run: bool = False,
+        reports: bool = False,
     ) -> None:
+        if reports:
+            return
         mail = None
         try:
             mail = self.outlook.CreateItem(0)

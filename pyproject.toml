@@ -1,6 +1,6 @@
 [project]
-name = "payroll-checker"
-version = "0.1.0"
+name = "payroll_checker"
+version = "0.1.1"
 description = "Windows CLI tool that audits biweekly payroll timesheet exports and emails affected employees/approvers via Outlook."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -10,6 +10,8 @@ dependencies = [
     "validators",
     "pywin32; platform_system == 'Windows'",
 ]
+[project.scripts]
+payroll_checker = "__main__:main"
 
 [project.optional-dependencies]
 dev = [
