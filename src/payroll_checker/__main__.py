@@ -1,17 +1,25 @@
-# TODO: new logger for failures below
-# TODO: file collection
-# TODO: pyautogui argos
-# TODO: windows task schedule
-import argparse
+"""Entry point that orchestrates all payroll checks for a pay period.
+
+Loads config from `.env`, runs each check in `checkers/`, emails the
+affected addresses via Outlook (`checkers.support.WinEmail`) for any check
+that finds a problem, and writes status charts / CSV reports to Downloads.
+
+Backlog (see README.md "To do" for details):
+    - a proper logger for failures (currently only partially wired up)
+    - automated file collection instead of manual Downloads exports
+    - pyautogui-based automation for remaining manual steps
+    - Windows Task Scheduler integration for unattended runs
+"""
+
 import configparser
 from pathlib import Path
 
-from .hours_breakdown import HoursBreakdown
-from .overlapping import OverlappingHours
-from .reporter import Reporter
-from .status import NotStarted, Pending
-from .support import WinEmail, collect_file, load_holidays, pay_period_check
-from .templates import (
+from .checkers.hours_breakdown import HoursBreakdown
+from .checkers.overlapping import OverlappingHours
+from .checkers.reporter import Reporter
+from .checkers.status import NotStarted, Pending
+from .checkers.support import WinEmail, collect_file, load_holidays, pay_period_check
+from .checkers.templates import (
     HOLIDAY_DATE_TEMPLATE,
     HOLIDAY_TYPE_TEMPLATE,
     INCORRECT_EARN_CODE_TEMPLATE,
@@ -23,19 +31,12 @@ from .templates import (
     UNION_WEEKEND_OT_TEMPLATE,
     WEEKEND_OT_TEMPLATE,
 )
+from .cli import cli
 
 
 def main():
-
-    # cli start
-    parser = argparse.ArgumentParser(description="Payroll Checker")
-    parser.add_argument(
-        "--dry-run", action="store_true", help="Display emails instead of sending them."
-    )
-    parser.add_argument("--reports", action="store_true", help="Run reports only.")
-    parser.add_argument("--pay-period", type=int, help="Pay period manual override.")
-    args = parser.parse_args()
-    # cli stop
+    """Run every check for the current pay period and email/report results."""
+    args = cli()
 
     # Load the configured timesheet website link from .env.
     env_path = Path().cwd() / ".env"

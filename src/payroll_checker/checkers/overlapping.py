@@ -1,3 +1,5 @@
+"""Overlapping timesheet entry check."""
+
 import logging
 from pathlib import Path
 
@@ -12,6 +14,7 @@ class OverlappingHours:
     """Detect employees with overlapping non-regular earnings."""
 
     def __init__(self, file: Path, pay_period: int) -> None:
+        """Load `file`'s overlapping-hours export, filtered to `pay_period`."""
         self.df: DataFrame = make_df(file, pay_period)
         self.df = self.df[
             [

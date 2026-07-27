@@ -1,8 +1,9 @@
+"""Earn-code, overtime, and holiday checks against the hours-breakdown export."""
+
 from pathlib import Path
 
 import pandas as pd
 from pandas import DataFrame
-
 from support import make_df, make_list, save_df_to_downloads
 
 
@@ -10,6 +11,12 @@ class HoursBreakdown:
     """Compute overtime and holiday detection email recipient lists."""
 
     def __init__(self, file_hours: Path, file_email: Path, pay_period: int) -> None:
+        """Build the hours dataframe for `pay_period`, joined to employee emails.
+
+        `file_hours` is the timesheet breakdown-by-earn-code export; `file_email`
+        is the active-employee export used only for its EmplID -> PacificEmail
+        mapping (`skip=True` since it isn't filtered by pay period).
+        """
         email_df = make_df(file_email, pay_period, skip=True)
         email_df = email_df[
             [
@@ -161,14 +168,17 @@ class HoursBreakdown:
         return make_list(result["PacificEmail"].dropna().unique().tolist())
 
     def seasonal_deteciton_type(self):
-        pass
+        """Not yet implemented (see `seasonal_days` in README To-do)."""
 
     def seasonal_deteciton_date(self):
-        pass
+        """Not yet implemented (see `seasonal_days` in README To-do)."""
 
     def holiday_detection_type(self, hol_list: list) -> list[str]:
-        """Incorrect earnings code on correct day(s)."""
-        # Refactor, use holidays from .env instead of passing list directly.
+        """Return emails for holiday-eligible employees missing HOL/HLW pay.
+
+        `hol_list` is the list of ISO holiday dates for the pay period
+        (loaded from `.env` via `load_holidays`).
+        """
         if not hol_list:
             return []
         filtered_df = self.hours_df[self.hours_df["ts_entry_date"].isin(hol_list)]
@@ -193,9 +203,11 @@ class HoursBreakdown:
         return make_list(final_df["PacificEmail"].unique().tolist())
 
     def holiday_detection_date(self, hol_list: list) -> list[str]:
-        """Holiday earnings code on normal day(s)."""
-        # Refactor, use holidays from .env instead of passing list directly.
-        # This should always run, if there are holiday codes on normal days, regardless of the holiday list.
+        """Return emails for HOL/HLW earn codes reported on a non-holiday day.
+
+        Runs even when `hol_list` is empty, since any HOL/HLW entry is
+        suspect if there's no configured holiday at all.
+        """
         filter_holiday = (self.hours_df["earn_code"] == "HOL") | (
             self.hours_df["earn_code"] == "HLW"
         )

@@ -1,3 +1,5 @@
+"""Not-started / pending timesheet checks and status charts."""
+
 from datetime import date
 from pathlib import Path
 
@@ -10,12 +12,14 @@ class NotStarted:
     """Track employees whose timesheets have not yet been started."""
 
     def __init__(self, not_started_file: Path, pay_period: int) -> None:
+        """Load `not_started_file`'s export, filtered to `pay_period`."""
         not_started_df = make_df(not_started_file, pay_period)
         self.not_started_df = not_started_df[
             ["EmplID", "job_ecls", "EmplEmail", "ApprEmail"]
         ].drop_duplicates()
 
     def not_started_list(self) -> list[str]:
+        """Return emails for employees who haven't started a timesheet."""
         if self.not_started_df.empty:
             return []
         return make_list(self.not_started_df["EmplEmail"].unique().tolist())
@@ -25,6 +29,7 @@ class Pending:
     """Track employees whose timesheets are pending approval."""
 
     def __init__(self, status_file: Path, pay_period: int) -> None:
+        """Load `status_file`'s timesheet status export, filtered to `pay_period`."""
         status_df = make_df(status_file, pay_period)
         self.status_df = status_df[
             [

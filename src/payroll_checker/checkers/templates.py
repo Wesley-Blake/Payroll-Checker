@@ -1,3 +1,5 @@
+"""Email body templates for each payroll check, appended with the timesheet link."""
+
 from string import Template
 
 # NO_HOLIDAY_TEMPLATE = """\

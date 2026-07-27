@@ -1,3 +1,5 @@
+"""Config loading, file discovery, pay period math, and Outlook email sending."""
+
 import configparser
 import logging
 from datetime import datetime, timedelta
@@ -99,6 +101,7 @@ def pay_period_check(first_sunday: str) -> int:
 
 
 def collect_file(keyword: str) -> Path:
+    """Return the most recently modified file in Downloads containing `keyword`."""
     directory = Path.home() / "Downloads"
     if not directory.is_dir():
         msg = f"{directory} is not a valid directory."
@@ -148,7 +151,10 @@ def make_df(file: Path, pay_period: int, skip: bool = False) -> DataFrame:
 
 
 class WinEmail:
+    """Send payroll notice emails through the local Outlook installation."""
+
     def __init__(self):
+        """Connect to Outlook via COM and load the hours-guide attachment path from `.env`."""
         try:
             self.outlook = win32.Dispatch("outlook.application")
         except Exception as e:
@@ -172,6 +178,11 @@ class WinEmail:
         dry_run: bool = False,
         reports: bool = False,
     ) -> None:
+        """Draft an Outlook email BCC'd to `bcc` and send, display, or skip it.
+
+        `reports=True` skips sending entirely (reports-only run). Otherwise
+        `dry_run=True` opens the draft for review instead of sending it.
+        """
         if reports:
             return
         mail = None

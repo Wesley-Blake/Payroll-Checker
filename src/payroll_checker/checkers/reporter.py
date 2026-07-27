@@ -1,3 +1,5 @@
+"""Overtime / union meal / weekend OT CSV report generation."""
+
 from pathlib import Path
 
 import pandas as pd
@@ -8,6 +10,10 @@ class Reporter:
     """Generate payroll reports from the latest timesheet CSV."""
 
     def __init__(self, file_hours: Path, output_dir: Path) -> None:
+        """Load the most recent timesheet breakdown CSV under `file_hours`.
+
+        `output_dir` is where generated reports are written.
+        """
         self.df: DataFrame = pd.read_csv(self._find_latest_timesheet_csv(file_hours))
         self.output_dir = Path(output_dir)
 
@@ -15,6 +21,10 @@ class Reporter:
         self,
         search_path: Path | None = None,
     ) -> Path:
+        """Return the newest "ts_break_down_in_out_hours_by_earn_code" CSV.
+
+        Searches `search_path` (defaults to the user's Downloads folder).
+        """
         if search_path is None:
             search_path = Path.home() / "Downloads"
         search_path = Path(search_path)

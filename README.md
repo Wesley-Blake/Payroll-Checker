@@ -61,24 +61,27 @@ seasonal_days =
 ## Usage
 
 ```sh
-python -m src            # run checks and send emails
-python -m src --dry-run  # display drafted emails instead of sending
+python -m payroll_checker              # run checks and send emails
+python -m payroll_checker --dry-run    # display drafted emails instead of sending
+python -m payroll_checker --reports    # skip emails, only generate charts/CSV reports
+python -m payroll_checker --pay-period 5  # override the auto-detected pay period
 ```
 
 ## Project structure
 
 ```
-src/
-  __main__.py             # entry point / check orchestration
-  hours_breakdown.py       # earn code, overtime, holiday checks
-  overlapping.py           # overlapping timesheet entry check
-  status.py                # not-started / pending checks + status charts
-  reporter.py               # overtime / union meal / weekend OT CSV reports
-  support.py                # config loading, file discovery, Outlook email, pay period math
-  templates.py              # email body templates
-tests/
-  test_hours_breakdown.py
-pyproject.toml            # project metadata + pinned dependencies
+src/payroll_checker/
+  __main__.py               # entry point / check orchestration
+  cli.py                    # argparse CLI (--dry-run, --reports, --pay-period)
+  checkers/
+    hours_breakdown.py       # earn code, overtime, holiday checks
+    overlapping.py           # overlapping timesheet entry check
+    status.py                # not-started / pending checks + status charts
+    reporter.py              # overtime / union meal / weekend OT CSV reports
+    support.py                # config loading, file discovery, Outlook email, pay period math
+    templates.py              # email body templates
+tests/                       # currently empty, see To do
+pyproject.toml                # project metadata + pinned dependencies
 ```
 
 ## Testing
@@ -87,10 +90,14 @@ pyproject.toml            # project metadata + pinned dependencies
 pytest
 ```
 
+Note: the `tests/` directory is currently empty following the package
+refactor above (`src/payroll_checker/`); tests need to be rewritten against
+the new module layout.
+
 ## To do
 
-- [ ] Add a proper logger for failures (see `__main__.py` header TODO) — logging
-      is only partially wired up (`src/support.py`).
+- [ ] Add a proper logger for failures (see `__main__.py` docstring) — logging
+      is only partially wired up (`src/payroll_checker/checkers/support.py`).
 - [ ] Automated file collection (e.g. pulling exports instead of relying on
       manual downloads).
 - [ ] `pyautogui`-based automation for steps that still require manual
@@ -99,10 +106,11 @@ pytest
 - [ ] Refactor per `claude_instructions.md`:
   - [ ] Parent class with shared "find CSV in Downloads" and "build filtered
         DataFrame" methods.
-  - [ ] One report object per CSV, each exposing per-error-type checks that
-        return unique email lists.
+  - [x] One report object per CSV, each exposing per-error-type checks that
+        return unique email lists (`checkers/`: `HoursBreakdown`,
+        `OverlappingHours`, `NotStarted`, `Pending`, `Reporter`).
   - [ ] Encode the full earn-code rule set (REG, VAC, SICK, HOL, HLW, OT,
         OT2, SHF, PER, MD, BRV, VLT/JRY) per job class (OO/PP/WW vs UU/VV).
 - [ ] Wire up `seasonal_days` from `.env` (currently unused).
 - [ ] Restore/implement the commented-out `zero_hours_list` check in
-      `helpers/status.py`.
+      `checkers/status.py`.
