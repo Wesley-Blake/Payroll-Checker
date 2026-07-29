@@ -5,21 +5,28 @@ affected addresses via Outlook (`checkers.support.WinEmail`) for any check
 that finds a problem, and writes status charts / CSV reports to Downloads.
 
 Backlog (see README.md "To do" for details):
-    - a proper logger for failures (currently only partially wired up)
     - automated file collection instead of manual Downloads exports
     - pyautogui-based automation for remaining manual steps
     - Windows Task Scheduler integration for unattended runs
 """
 
 import configparser
+import logging
 from pathlib import Path
 
-from .checkers.hours_breakdown import HoursBreakdown
-from .checkers.overlapping import OverlappingHours
-from .checkers.reporter import Reporter
-from .checkers.status import NotStarted, Pending
-from .checkers.support import WinEmail, collect_file, load_holidays, pay_period_check
-from .checkers.templates import (
+from checkers.hours_breakdown import HoursBreakdown
+from checkers.overlapping import OverlappingHours
+from checkers.reporter import Reporter
+from checkers.status import NotStarted, Pending
+from checkers.support import (
+    WinEmail,
+    collect_file,
+    configure_logging,
+    load_holidays,
+    pay_period_check,
+    run_check,
+)
+from checkers.templates import (
     HOLIDAY_DATE_TEMPLATE,
     HOLIDAY_TYPE_TEMPLATE,
     INCORRECT_EARN_CODE_TEMPLATE,
@@ -31,28 +38,35 @@ from .checkers.templates import (
     UNION_WEEKEND_OT_TEMPLATE,
     WEEKEND_OT_TEMPLATE,
 )
-from .cli import cli
+from cli import cli
+
+logger = logging.getLogger(__name__)
+configure_logging()
+
+ARGS = cli()
+CONFIG = configparser.ConfigParser()
+CONFIG.read(Path().cwd() / ".env")
+TIMESHEET_LINK: str = CONFIG.get("Payroll-Checker", "website", fallback="")
+if not TIMESHEET_LINK:
+    MSG = "Missing TIMESHEET_LINK."
+    logger.error(MSG)
+    raise ValueError(MSG)
+
+if ARGS.pay_period is None:
+    PAY_PERIOD = pay_period_check(
+        CONFIG.get("Payroll-Checker", "first_sunday", fallback="")
+    )
+else:
+    PAY_PERIOD = ARGS.pay_period
 
 
 def main():
     """Run every check for the current pay period and email/report results."""
-    args = cli()
 
     # Load the configured timesheet website link from .env.
-    env_path = Path().cwd() / ".env"
-    config = configparser.ConfigParser()
-    config.read(env_path)
-    TIMESHEET_LINK: str = config.get("Payroll-Checker", "website", fallback="")
-    if not TIMESHEET_LINK:
-        raise ValueError(f"Missing TIMESHEET_LINK in {env_path}")
+    logger.info("Pay period: %s", PAY_PERIOD)
 
-    if args.pay_period is None:
-        PAY_PERIOD = pay_period_check(
-            config.get("Payroll-Checker", "first_sunday", fallback="")
-        )
-    else:
-        PAY_PERIOD = args.pay_period
-
+    # Create object, if this fails, program should end.
     hours_breakdown = HoursBreakdown(
         collect_file("ts_break_down"), collect_file("Active_Empls"), PAY_PERIOD
     )
@@ -60,115 +74,77 @@ def main():
     not_started = NotStarted(collect_file("not_yet_started_WTE"), PAY_PERIOD)
     pending = Pending(collect_file("Comments"), PAY_PERIOD)
     emailer = WinEmail()
+    # End object creation.
 
-    # Holiday Detections
     list_o_holidays = load_holidays()
-    if list_o_holidays:
-        if result_holiday_type := hours_breakdown.holiday_detection_type(
-            list_o_holidays
-        ):
-            emailer.send_email(
-                result_holiday_type,
-                PAY_PERIOD,
-                HOLIDAY_TYPE_TEMPLATE.substitute(
-                    list_o_holidays=", ".join(list_o_holidays)
-                )
-                + TIMESHEET_LINK,
-                dry_run=args.dry_run,
-                reports=args.reports,
-            )
-        if result_holiday_date := hours_breakdown.holiday_detection_date(
-            list_o_holidays
-        ):
-            emailer.send_email(
-                result_holiday_date,
-                PAY_PERIOD,
-                HOLIDAY_DATE_TEMPLATE.substitute(
-                    list_o_holidays=", ".join(list_o_holidays)
-                )
-                + TIMESHEET_LINK,
-                dry_run=args.dry_run,
-                reports=args.reports,
-            )
-
-    # Incorrect Earn Code Check
-    if result_incorrect_earn_code := hours_breakdown.incorrect_earn_code():
-        emailer.send_email(
-            result_incorrect_earn_code,
-            PAY_PERIOD,
+    checks = [
+        (
+            "holiday_detection_type",
+            hours_breakdown.holiday_detection_type,
+            (list_o_holidays,),
+            HOLIDAY_TYPE_TEMPLATE.substitute(list_o_holidays=", ".join(list_o_holidays))
+            + TIMESHEET_LINK,
+        ),
+        (
+            "holiday_detection_date",
+            hours_breakdown.holiday_detection_date,
+            (list_o_holidays,),
+            HOLIDAY_DATE_TEMPLATE.substitute(list_o_holidays=", ".join(list_o_holidays))
+            + TIMESHEET_LINK,
+        ),
+        (
+            "incorrect_earn_code",
+            hours_breakdown.incorrect_earn_code,
+            (),
             INCORRECT_EARN_CODE_TEMPLATE + TIMESHEET_LINK,
-            dry_run=args.dry_run,
-            reports=args.reports,
-        )
-
-    # Overtime Check
-    if result_overtime := hours_breakdown.over_eight_hours():
-        emailer.send_email(
-            result_overtime,
-            PAY_PERIOD,
+        ),
+        (
+            "over_eight_hours",
+            hours_breakdown.over_eight_hours,
+            (),
             OVERTIME_TEMPLATE + TIMESHEET_LINK,
-            dry_run=args.dry_run,
-            reports=args.reports,
-        )
-
-    # Over twelve hours in a day Overtime
-    if result_over_twelve := hours_breakdown.over_twelve_hours():
-        emailer.send_email(
-            result_over_twelve,
-            PAY_PERIOD,
+        ),
+        (
+            "over_twelve_hours",
+            hours_breakdown.over_twelve_hours,
+            (),
             OVER_TWELVE_TEMPLATE + TIMESHEET_LINK,
-            dry_run=args.dry_run,
-            reports=args.reports,
-        )
-
-    # Weekend overtime check
-    if result_weekend_overtime := hours_breakdown.weekend_overtime():
-        emailer.send_email(
-            result_weekend_overtime,
-            PAY_PERIOD,
+        ),
+        (
+            "weekend_overtime",
+            hours_breakdown.weekend_overtime,
+            (),
             WEEKEND_OT_TEMPLATE + TIMESHEET_LINK,
-            dry_run=args.dry_run,
-            reports=args.reports,
-        )
-
-    # Union weekend overtime check
-    if result_union_weekend_overtime := hours_breakdown.union_weekend_overtime():
-        emailer.send_email(
-            result_union_weekend_overtime,
-            PAY_PERIOD,
+        ),
+        (
+            "union_weekend_overtime",
+            hours_breakdown.union_weekend_overtime,
+            (),
             UNION_WEEKEND_OT_TEMPLATE + TIMESHEET_LINK,
-            dry_run=args.dry_run,
-            reports=args.reports,
-        )
-
-    # Overlapping Check
-    if result_overlapping := overlapping_hours.overlapping_list():
-        emailer.send_email(
-            result_overlapping,
-            PAY_PERIOD,
+        ),
+        (
+            "overlapping",
+            overlapping_hours.overlapping_list,
+            (),
             OVERLAPPING_TEMPLATE + TIMESHEET_LINK,
-            dry_run=args.dry_run,
-            reports=args.reports,
-        )
-
-    # Not Started Check
-    if result_not_started := not_started.not_started_list():
-        emailer.send_email(
-            result_not_started,
-            PAY_PERIOD,
+        ),
+        (
+            "not_started",
+            not_started.not_started_list,
+            (),
             NOT_STARTED_TEMPLATE + TIMESHEET_LINK,
-            dry_run=args.dry_run,
-            reports=args.reports,
-        )
-
-    # Pending Check
-    if result_pending := pending.pending_list():
-        emailer.send_email(
-            result_pending,
+        ),
+        ("pending", pending.pending_list, (), PENDING_TEMPLATE + TIMESHEET_LINK),
+    ]
+    for name, check_fn, check_args, template in checks:
+        run_check(
+            name,
+            lambda check_fn=check_fn, check_args=check_args: check_fn(*check_args),
+            template,
+            emailer,
             PAY_PERIOD,
-            PENDING_TEMPLATE + TIMESHEET_LINK,
-            dry_run=args.dry_run,
-            reports=args.reports,
+            ARGS.dry_run,
+            ARGS.reports,
         )
 
     downloads = Path.home() / "Downloads"
@@ -181,10 +157,14 @@ def main():
         save_path=downloads / "Timesheet_Status_Distribution_by_Job_Ecls.png",
     )
 
-    downloads: Path = Path.home() / "Downloads"
     reporter_instance: Reporter = Reporter(downloads, downloads)
     reporter_instance.generate_union_meal_report()
+    logger.info("Run complete.")
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        logger.exception("payroll_checker run failed.")
+        raise SystemError("payroll_checker run failed.") from e
