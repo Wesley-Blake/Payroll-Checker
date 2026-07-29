@@ -1,11 +1,13 @@
 """Not-started / pending timesheet checks and status charts."""
 
+import logging
 from datetime import date
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from checkers.support import collect_file, make_df, make_list, pay_period_check
 
-from support import collect_file, make_df, make_list, pay_period_check
+logger = logging.getLogger(__name__)
 
 
 class NotStarted:
@@ -101,7 +103,7 @@ class Pending:
         df = self.status_df[white_list].drop_duplicates()
         counts = df.groupby(["ts_Status", "job_ecls"]).size().unstack(fill_value=0)
         statuses = counts.index
-        fig, ax = plt.subplots()
+        _, ax = plt.subplots()
         counts.plot(
             kind="bar",
             stacked=True,

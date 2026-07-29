@@ -1,9 +1,12 @@
 """Overtime / union meal / weekend OT CSV report generation."""
 
+import logging
 from pathlib import Path
 
 import pandas as pd
 from pandas import DataFrame
+
+logger = logging.getLogger(__name__)
 
 
 class Reporter:
@@ -36,7 +39,9 @@ class Reporter:
             )
         ]
         if not files:
-            raise FileNotFoundError("No matching file found in the Downloads folder.")
+            msg = "No matching file found in the Downloads folder."
+            logger.error(msg)
+            raise FileNotFoundError(msg)
         return max(files, key=lambda path: path.stat().st_mtime)
 
     def generate_union_meal_report(self) -> None:

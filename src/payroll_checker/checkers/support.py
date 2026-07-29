@@ -3,6 +3,7 @@
 import configparser
 import logging
 from datetime import datetime, timedelta
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 import pandas as pd
@@ -16,6 +17,26 @@ logger = logging.getLogger(__name__)
 def _get_repo_root() -> Path:
     """Return the repository root based on this module's location."""
     return Path(__file__).resolve().parents[1]
+
+
+def configure_logging() -> None:
+    """Log DEBUG+ to a rotating file in the cwd.
+
+    Runs are typically unattended (Task Scheduler), so the file handler
+    is what makes a failed run diagnosable after the fact.
+    """
+    formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+
+    file_handler = RotatingFileHandler(
+        Path.cwd() / "payroll_checker.log",
+        maxBytes=1_000_000,
+        backupCount=3,
+        encoding="utf-8",
+    )
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(formatter)
+
+    logging.basicConfig(level=logging.DEBUG, handlers=[file_handler])
 
 
 def load_holidays() -> list[str]:
@@ -77,27 +98,6 @@ def pay_period_check(first_sunday: str) -> int:
         logger.error(msg)
         raise ValueError(msg)
     return pay_period
-    # pay_periods = [str(x) for x in range(1, 27)]
-    # while True:
-    #    result = input("What pay period is it? ")
-    #    if (input(f"{result} is this correct? [Y/n] ").lower() or "y") != "y":
-    #        continue
-    #    if result in pay_periods:
-    #        return int(result)
-
-
-# def loading_bar(length, index=1, prefix = '') -> callable:
-#    print()
-#    def make_bar(length=length, index=index, prefix=prefix) -> str:
-#        BAR_LENGTH = 30
-#        if len(prefix) > 0: print(prefix)
-#        while index <= length:
-#            block = int(BAR_LENGTH * index / length)
-#            bar = '=' * block + '-' * (BAR_LENGTH - block)
-#            yield f'\r|{bar}| {index} / {length} emails sent.'
-#            index += 1
-#    g = make_bar()
-#    return lambda: print(next(g), end='', flush=True)
 
 
 def collect_file(keyword: str) -> Path:
@@ -119,6 +119,7 @@ def collect_file(keyword: str) -> Path:
         msg = f"No file containing '{keyword}' found in {directory}."
         logger.error(msg)
         raise AssertionError(msg)
+    logger.info("Collected file for '%s': %s", keyword, latest_file.name)
     return latest_file
 
 
@@ -203,3 +204,41 @@ class WinEmail:
             msg = f"Error sending email: {e}"
             logger.error(msg)
             raise RuntimeError(msg) from e
+        logger.info(
+            "Email for pay period %s %s to %d recipient(s).",
+            pay_period,
+            "displayed (dry run)" if dry_run else "sent",
+            len(bcc),
+        )
+
+
+def run_check(
+    name: str,
+    check_fn,
+    template: str,
+    emailer: WinEmail,
+    pay_period: int,
+    dry_run: bool,
+    reports: bool,
+) -> None:
+    """Run one check and, if it finds anything, email the result.
+
+    A failure here (check logic or the Outlook send) is logged and
+    swallowed so one bad check/email doesn't stop the remaining checks
+    from running.
+    """
+    try:
+        result = check_fn()
+    except Exception:
+        logger.exception("Check '%s' failed to run; skipping.", name)
+        return
+    if not result:
+        logger.info("Check '%s': no results.", name)
+        return
+    logger.info("Check '%s': %d result(s).", name, len(result))
+    try:
+        emailer.send_email(
+            result, pay_period, template, dry_run=dry_run, reports=reports
+        )
+    except Exception:
+        logger.exception("Check '%s': failed to send email; continuing.", name)
