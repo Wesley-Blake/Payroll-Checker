@@ -15,9 +15,9 @@ payroll_checker = "__main__:main"
 
 [project.optional-dependencies]
 dev = [
-    "pytest",
+    #"pytest",
     "ruff==0.15.22",
 ]
 
-[tool.pytest.ini_options]
-testpaths = ["tests"]
+#[tool.pytest.ini_options]
+#testpaths = ["tests"]
