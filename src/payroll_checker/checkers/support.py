@@ -186,6 +186,11 @@ class WinEmail:
         """
         if reports:
             return
+        # Defense-in-depth: re-validate here even though callers are
+        # expected to have already run bcc through make_list(), so a
+        # future caller that forgets validation can't get unvalidated
+        # strings into the BCC line.
+        bcc = make_list(bcc)
         mail = None
         try:
             mail = self.outlook.CreateItem(0)
