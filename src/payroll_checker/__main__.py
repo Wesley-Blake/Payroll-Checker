@@ -3,11 +3,6 @@
 Loads config from `.env`, runs each check in `checkers/`, emails the
 affected addresses via Outlook (`checkers.support.WinEmail`) for any check
 that finds a problem, and writes status charts / CSV reports to Downloads.
-
-Backlog (see README.md "To do" for details):
-    - automated file collection instead of manual Downloads exports
-    - pyautogui-based automation for remaining manual steps
-    - Windows Task Scheduler integration for unattended runs
 """
 
 import configparser
@@ -48,9 +43,8 @@ CONFIG = configparser.ConfigParser()
 CONFIG.read(Path().cwd() / ".env")
 TIMESHEET_LINK: str = CONFIG.get("Payroll-Checker", "website", fallback="")
 if not TIMESHEET_LINK:
-    MSG = "Missing TIMESHEET_LINK."
-    logger.error(MSG)
-    raise ValueError(MSG)
+    logger.error("Missing TIMESHEET_LINK.")
+    raise ValueError("Missing TIMESHEET_LINK.")
 
 if ARGS.pay_period is None:
     PAY_PERIOD = pay_period_check(
@@ -63,7 +57,6 @@ else:
 def main():
     """Run every check for the current pay period and email/report results."""
 
-    # Load the configured timesheet website link from .env.
     logger.info("Pay period: %s", PAY_PERIOD)
 
     # Create object, if this fails, program should end.
