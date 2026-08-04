@@ -1,8 +1,9 @@
 """Config loading, file discovery, pay period math, and Outlook email sending."""
 
 import configparser
+import datetime
 import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
@@ -12,6 +13,8 @@ import win32com.client as win32
 from pandas import DataFrame
 
 logger = logging.getLogger(__name__)
+
+ALLOWED_EMAIL_DOMAIN = "pacific.edu"
 
 
 def _get_repo_root() -> Path:
@@ -52,20 +55,32 @@ def load_holidays() -> list[str]:
         holiday = raw_holiday.strip()
         if not holiday:
             continue
-        datetime.fromisoformat(holiday)
+        datetime.datetime.fromisoformat(holiday)
         holiday_list.append(holiday)
     return holiday_list
 
 
 def make_list(check: list) -> list[str]:
-    """Validate a list of emails and return the same list if valid."""
+    """Validate a list of emails and return the same list if valid.
+
+    Rejects anything that isn't a well-formed address, contains control
+    characters (which the `validators` regex can miss at the end of a
+    string), or falls outside `ALLOWED_EMAIL_DOMAIN`. Invalid values are
+    never logged verbatim since these lists are sourced from HR exports
+    and may contain PII.
+    """
     if not isinstance(check, list):
         msg = "Input must be a list"
         logger.error(msg)
-        raise AssertionError(msg)
-    for i in check:
-        if not validators.email(i):
-            msg = f"Invalid email format: {i}"
+        raise TypeError(msg)
+    for idx, i in enumerate(check):
+        if (
+            not isinstance(i, str)
+            or any(c in i for c in "\r\n\x00")
+            or not validators.email(i)
+            or not i.lower().endswith(f"@{ALLOWED_EMAIL_DOMAIN}")
+        ):
+            msg = f"Invalid email at index {idx} (value redacted)."
             logger.error(msg)
             raise AssertionError(msg)
     return check
@@ -78,19 +93,22 @@ def pay_period_check(first_sunday: str) -> int:
         logger.error(msg)
         raise ValueError(msg)
     # If this fails program should fail.
-    datetime.fromisoformat(first_sunday)
+    datetime.datetime.fromisoformat(first_sunday)
     pay_period = 0
-    current_date = datetime.fromisoformat(first_sunday)
+    current_date = datetime.datetime.fromisoformat(first_sunday)
     # This loop should be a negative value. past - present
-    while (current_date - datetime.now()).days < 0:
+    while (current_date - datetime.datetime.now(datetime.UTC)).days < 0:
         pay_period += 1
         current_date += timedelta(days=14)
         # Pay years can spill over, but anything greater than 1 is wrong.
         if (
-            datetime.now().year - current_date.year > 1
-            or current_date.year - datetime.now().year > 1
+            datetime.datetime.now(datetime.UTC).year - current_date.year > 1
+            or current_date.year - datetime.datetime.now(datetime.UTC).year > 1
         ):
-            msg = "Check your dates in Env!" + f"{datetime.now()=} - {current_date=}"
+            msg = (
+                "Check your dates in Env!"
+                + f"{datetime.datetime.now(datetime.UTC)=} - {current_date=}"
+            )
             logger.error(msg)
             raise ValueError(msg)
     if pay_period == 0:
@@ -134,15 +152,18 @@ def make_df(file: Path, pay_period: int, skip: bool = False) -> DataFrame:
     if not isinstance(file, Path):
         msg = f"Bad file input type {type(file)=}"
         logger.error(msg)
-        raise AssertionError(msg)
+        raise TypeError(msg)
     df = pd.read_csv(file)
     headers = df.columns
     if skip:
         return df
     for header in headers:
-        if "pay" in header.lower() and "no" in header.lower():
-            if df[header].iloc[0] == pay_period:
-                return df
+        if (
+            "pay" in header.lower()
+            and "no" in header.lower()
+            and df[header].iloc[0] == pay_period
+        ):
+            return df
     msg = (
         f"Warning: No matching pay period found in {file}. "
         f"Expected pay period: {pay_period}."
