@@ -5,7 +5,6 @@ affected addresses via Outlook (`checkers.support.WinEmail`) for any check
 that finds a problem, and writes status charts / CSV reports to Downloads.
 """
 
-import configparser
 import logging
 from pathlib import Path
 
@@ -14,11 +13,12 @@ from checkers.overlapping import OverlappingHours
 from checkers.reporter import Reporter
 from checkers.status import NotStarted, Pending
 from checkers.support import (
+    Config,
     WinEmail,
     collect_file,
     configure_logging,
+    load_config,
     load_holidays,
-    pay_period_check,
     run_check,
 )
 from checkers.templates import (
@@ -36,36 +36,24 @@ from checkers.templates import (
 from cli import cli
 
 logger = logging.getLogger(__name__)
-configure_logging()
-
-ARGS = cli()
-CONFIG = configparser.ConfigParser()
-CONFIG.read(Path().cwd() / ".env")
-TIMESHEET_LINK: str = CONFIG.get("Payroll-Checker", "website", fallback="")
-if not TIMESHEET_LINK:
-    logger.error("Missing TIMESHEET_LINK.")
-    raise ValueError("Missing TIMESHEET_LINK.")
-
-if ARGS.pay_period is None:
-    PAY_PERIOD = pay_period_check(
-        CONFIG.get("Payroll-Checker", "first_sunday", fallback="")
-    )
-else:
-    PAY_PERIOD = ARGS.pay_period
 
 
-def main():
+def main(config: Config | None = None):
     """Run every check for the current pay period and email/report results."""
+    configure_logging()
+    config = config or load_config(cli())
+    pay_period = config.pay_period
+    timesheet_link = config.timesheet_link
 
-    logger.info("Pay period: %s", PAY_PERIOD)
+    logger.info("Pay period: %s", pay_period)
 
     # Create object, if this fails, program should end.
     hours_breakdown = HoursBreakdown(
-        collect_file("ts_break_down"), collect_file("Active_Empls"), PAY_PERIOD
+        collect_file("ts_break_down"), collect_file("Active_Empls"), pay_period
     )
-    overlapping_hours = OverlappingHours(collect_file("Overlapping"), PAY_PERIOD)
-    not_started = NotStarted(collect_file("not_yet_started_WTE"), PAY_PERIOD)
-    pending = Pending(collect_file("Comments"), PAY_PERIOD)
+    overlapping_hours = OverlappingHours(collect_file("Overlapping"), pay_period)
+    not_started = NotStarted(collect_file("not_yet_started_WTE"), pay_period)
+    pending = Pending(collect_file("Comments"), pay_period)
     emailer = WinEmail()
     # End object creation.
 
@@ -76,58 +64,58 @@ def main():
             hours_breakdown.holiday_detection_type,
             (list_o_holidays,),
             HOLIDAY_TYPE_TEMPLATE.substitute(list_o_holidays=", ".join(list_o_holidays))
-            + TIMESHEET_LINK,
+            + timesheet_link,
         ),
         (
             "holiday_detection_date",
             hours_breakdown.holiday_detection_date,
             (list_o_holidays,),
             HOLIDAY_DATE_TEMPLATE.substitute(list_o_holidays=", ".join(list_o_holidays))
-            + TIMESHEET_LINK,
+            + timesheet_link,
         ),
         (
             "incorrect_earn_code",
             hours_breakdown.incorrect_earn_code,
             (),
-            INCORRECT_EARN_CODE_TEMPLATE + TIMESHEET_LINK,
+            INCORRECT_EARN_CODE_TEMPLATE + timesheet_link,
         ),
         (
             "over_eight_hours",
             hours_breakdown.over_eight_hours,
             (),
-            OVERTIME_TEMPLATE + TIMESHEET_LINK,
+            OVERTIME_TEMPLATE + timesheet_link,
         ),
         (
             "over_twelve_hours",
             hours_breakdown.over_twelve_hours,
             (),
-            OVER_TWELVE_TEMPLATE + TIMESHEET_LINK,
+            OVER_TWELVE_TEMPLATE + timesheet_link,
         ),
         (
             "weekend_overtime",
             hours_breakdown.weekend_overtime,
             (),
-            WEEKEND_OT_TEMPLATE + TIMESHEET_LINK,
+            WEEKEND_OT_TEMPLATE + timesheet_link,
         ),
         (
             "union_weekend_overtime",
             hours_breakdown.union_weekend_overtime,
             (),
-            UNION_WEEKEND_OT_TEMPLATE + TIMESHEET_LINK,
+            UNION_WEEKEND_OT_TEMPLATE + timesheet_link,
         ),
         (
             "overlapping",
             overlapping_hours.overlapping_list,
             (),
-            OVERLAPPING_TEMPLATE + TIMESHEET_LINK,
+            OVERLAPPING_TEMPLATE + timesheet_link,
         ),
         (
             "not_started",
             not_started.not_started_list,
             (),
-            NOT_STARTED_TEMPLATE + TIMESHEET_LINK,
+            NOT_STARTED_TEMPLATE + timesheet_link,
         ),
-        ("pending", pending.pending_list, (), PENDING_TEMPLATE + TIMESHEET_LINK),
+        ("pending", pending.pending_list, (), PENDING_TEMPLATE + timesheet_link),
     ]
     for name, check_fn, check_args, template in checks:
         run_check(
@@ -135,18 +123,18 @@ def main():
             lambda check_fn=check_fn, check_args=check_args: check_fn(*check_args),
             template,
             emailer,
-            PAY_PERIOD,
-            ARGS.dry_run,
-            ARGS.reports,
+            pay_period,
+            config.args.dry_run,
+            config.args.reports,
         )
 
     downloads = Path.home() / "Downloads"
     pending.plot_timesheet_statuses(
-        title=f"{PAY_PERIOD} Timesheet Status Distribution",
+        title=f"{pay_period} Timesheet Status Distribution",
         save_path=downloads / "Timesheet_Status_Distribution.png",
     )
     pending.plot_timesheet_statuses_by_job_ecls(
-        title=f"{PAY_PERIOD} Timesheet Status Distribution",
+        title=f"{pay_period} Timesheet Status Distribution",
         save_path=downloads / "Timesheet_Status_Distribution_by_Job_Ecls.png",
     )
 

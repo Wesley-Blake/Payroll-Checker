@@ -1,8 +1,10 @@
 """Config loading, file discovery, pay period math, and Outlook email sending."""
 
+import argparse
 import configparser
 import datetime
 import logging
+from dataclasses import dataclass
 from datetime import timedelta
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
@@ -20,6 +22,41 @@ ALLOWED_EMAIL_DOMAIN = "pacific.edu"
 def _get_repo_root() -> Path:
     """Return the repository root based on this module's location."""
     return Path(__file__).resolve().parents[1]
+
+
+@dataclass
+class Config:
+    """Resolved run configuration: CLI args plus `.env` values."""
+
+    args: argparse.Namespace
+    config: configparser.ConfigParser
+    timesheet_link: str
+    pay_period: int
+
+
+def load_config(args: argparse.Namespace) -> Config:
+    """Resolve `.env` and `args` into a `Config` for this run.
+
+    Raises `ValueError` if `.env` is missing `website`, or if the pay period
+    can't be determined (see `pay_period_check`).
+    """
+    config = configparser.ConfigParser()
+    config.read(Path().cwd() / ".env")
+    timesheet_link: str = config.get("Payroll-Checker", "website", fallback="")
+    if not timesheet_link:
+        logger.error("Missing TIMESHEET_LINK.")
+        raise ValueError("Missing TIMESHEET_LINK.")
+
+    if args.pay_period is None:
+        pay_period = pay_period_check(
+            config.get("Payroll-Checker", "first_sunday", fallback="")
+        )
+    else:
+        pay_period = args.pay_period
+
+    return Config(
+        args=args, config=config, timesheet_link=timesheet_link, pay_period=pay_period
+    )
 
 
 def configure_logging() -> None:
