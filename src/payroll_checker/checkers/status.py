@@ -5,20 +5,23 @@ import logging
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-from checkers.support import make_df, make_list
+
+from payroll_checker.checkers.base import BaseChecker
+from payroll_checker.validation import make_list
 
 logger = logging.getLogger(__name__)
 
 
-class NotStarted:
+class NotStarted(BaseChecker):
     """Track employees whose timesheets have not yet been started."""
+
+    HEADERS = ["EmplID", "job_ecls", "EmplEmail", "ApprEmail"]
 
     def __init__(self, not_started_file: Path, pay_period: int) -> None:
         """Load `not_started_file`'s export, filtered to `pay_period`."""
-        not_started_df = make_df(not_started_file, pay_period)
-        self.not_started_df = not_started_df[
-            ["EmplID", "job_ecls", "EmplEmail", "ApprEmail"]
-        ].drop_duplicates()
+        self.not_started_df = self.build_dataframe(
+            not_started_file, self.HEADERS, pay_period
+        )
 
     def not_started_list(self) -> list[str]:
         """Return emails for employees who haven't started a timesheet."""
@@ -27,22 +30,14 @@ class NotStarted:
         return make_list(self.not_started_df["EmplEmail"].unique().tolist())
 
 
-class Pending:
+class Pending(BaseChecker):
     """Track employees whose timesheets are pending approval."""
+
+    HEADERS = ["EmplID", "job_ecls", "PosnSuff", "ts_Status", "EmplEmail", "ApprEmail"]
 
     def __init__(self, status_file: Path, pay_period: int) -> None:
         """Load `status_file`'s timesheet status export, filtered to `pay_period`."""
-        status_df = make_df(status_file, pay_period)
-        self.status_df = status_df[
-            [
-                "EmplID",
-                "job_ecls",
-                "PosnSuff",
-                "ts_Status",
-                "EmplEmail",
-                "ApprEmail",
-            ]
-        ].drop_duplicates()
+        self.status_df = self.build_dataframe(status_file, self.HEADERS, pay_period)
 
     def pending_list(self) -> list[str]:
         """Return approver emails for timesheets still pending approval."""
@@ -52,7 +47,10 @@ class Pending:
         return make_list(final_df["ApprEmail"].unique().tolist())
 
     def zero_hours_list(self) -> list[str]:
-        pass
+        """Not yet implemented.
+
+        TODO: implement zero-hours detection (see README To-do).
+        """
 
     def plot_timesheet_statuses(
         self,

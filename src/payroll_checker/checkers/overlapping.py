@@ -3,25 +3,23 @@
 import logging
 from pathlib import Path
 
-from checkers.support import make_df, make_list, save_df_to_downloads
 from pandas import DataFrame
+
+from payroll_checker.checkers.base import BaseChecker
+from payroll_checker.downloads import save_df_to_downloads
+from payroll_checker.validation import make_list
 
 logger = logging.getLogger(__name__)
 
 
-class OverlappingHours:
+class OverlappingHours(BaseChecker):
     """Detect employees with overlapping non-regular earnings."""
+
+    HEADERS = ["empl_id", "earn_code", "Empl_Email"]
 
     def __init__(self, file: Path, pay_period: int) -> None:
         """Load `file`'s overlapping-hours export, filtered to `pay_period`."""
-        self.df: DataFrame = make_df(file, pay_period)
-        self.df = self.df[
-            [
-                "empl_id",
-                "earn_code",
-                "Empl_Email",
-            ]
-        ].drop_duplicates()
+        self.df: DataFrame = self.build_dataframe(file, self.HEADERS, pay_period)
         # CSV exports sometimes pad the file with fully blank trailing rows.
         rows_before = len(self.df)
         self.df = self.df.dropna(subset=["earn_code", "Empl_Email"])

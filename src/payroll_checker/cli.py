@@ -3,8 +3,11 @@
 import argparse
 
 
-def get_arguments() -> argparse.Namespace:
+def get_arguments(argv: list[str] | None = None) -> argparse.Namespace:
     """Parse and return the command-line arguments for a run.
+
+    `argv` defaults to `sys.argv[1:]` (the normal CLI case); callers such as
+    tests or `__main__.py` may pass an explicit list instead.
 
     Options:
         --dry-run: display drafted emails instead of sending them.
@@ -17,4 +20,4 @@ def get_arguments() -> argparse.Namespace:
     )
     parser.add_argument("--reports", action="store_true", help="Run reports only.")
     parser.add_argument("--pay-period", type=int, help="Pay period manual override.")
-    return parser.parse_args()
+    return parser.parse_args(argv)

@@ -32,11 +32,13 @@ Outlook. It also generates status charts and CSV reports for the pay period.
 - Python 3.11+ (uses `match`-free modern type hints like `list[str]`).
 - Packages: `pandas`, `matplotlib`, `validators`, `pywin32` (see `pyproject.toml`).
 
-Install with:
+Dependencies are pinned in `uv.lock`; install with [uv](https://docs.astral.sh/uv/):
 
 ```sh
-pip install -e .[dev]
+uv sync --extra dev
 ```
+
+(or, without uv: `pip install -e .[dev]`)
 
 ## Configuration
 
@@ -67,50 +69,67 @@ python -m payroll_checker --reports    # skip emails, only generate charts/CSV r
 python -m payroll_checker --pay-period 5  # override the auto-detected pay period
 ```
 
+Installing the package also provides a `payroll-checker` console script,
+equivalent to `python -m payroll_checker`:
+
+```sh
+payroll-checker --dry-run
+```
+
 ## Project structure
 
 ```
 src/payroll_checker/
-  main.py                   # entry point / check orchestration
-  cli.py                    # argparse CLI (--dry-run, --reports, --pay-period)
+  main.py                   # CLI entry point: parse args, resolve config, call runner.run()
+  __main__.py                # enables `python -m payroll_checker`
+  runner.py                   # orchestrates all checks for a pay period, sends emails
+  cli.py                       # argparse CLI (--dry-run, --reports, --pay-period)
+  config.py                     # Config, .env loading, pay-period math
+  downloads.py                   # Downloads-folder file discovery + CSV output (single source of truth)
+  validation.py                   # email address validation
+  outlook.py                       # Outlook COM email sending (only module that needs win32com)
+  logging_setup.py                  # rotating file logging setup
+  templates.py                       # email body templates + render()
   checkers/
-    hours_breakdown.py       # earn code, overtime, holiday checks
-    overlapping.py           # overlapping timesheet entry check
-    status.py                # not-started / pending checks + status charts
-    reporter.py              # overtime / union meal / weekend OT CSV reports
-    support.py                # config loading, file discovery, Outlook email, pay period math
-    templates.py              # email body templates
-tests/                       # currently empty, see To do
-pyproject.toml                # project metadata + pinned dependencies
+    base.py                          # BaseChecker: shared "find CSV" / "build DataFrame" methods
+    hours_breakdown.py                # earn code, overtime, holiday checks
+    overlapping.py                     # overlapping timesheet entry check
+    status.py                           # not-started / pending checks + status charts
+    reporter.py                          # overtime / union meal / weekend OT CSV reports
+tests/                        # config, base-checker, and Downloads-I/O smoke tests
+pyproject.toml                # project metadata, dependencies, console-script entry point
 ```
 
 ## Testing
 
 ```sh
-pytest
+uv sync --extra dev
+uv run pytest
 ```
 
-Note: the `tests/` directory is currently empty following the package
-refactor above (`src/payroll_checker/`); tests need to be rewritten against
-the new module layout.
+Current coverage is a smoke-test scaffold for the shared plumbing: `.env`/
+pay-period config loading (`tests/test_config.py`), the shared checker base
+class's CSV discovery and DataFrame loading (`tests/test_base_checker.py`),
+and Downloads file I/O (`tests/test_downloads.py`). Per-checker payroll-rule
+coverage (e.g. `HoursBreakdown`'s overtime/holiday logic) is a follow-up.
 
 ## To do
 
 - [ ] Add a proper logger for failures (see `main.py` docstring) — logging
-      is only partially wired up (`src/payroll_checker/checkers/support.py`).
+      is only partially wired up (`src/payroll_checker/logging_setup.py`).
 - [ ] Automated file collection (e.g. pulling exports instead of relying on
       manual downloads).
 - [ ] `pyautogui`-based automation for steps that still require manual
       interaction.
 - [ ] Windows Task Scheduler integration for unattended runs.
 - [ ] Refactor per `.claude/CLAUDE.md`:
-  - [ ] Parent class with shared "find CSV in Downloads" and "build filtered
-        DataFrame" methods.
+  - [x] Parent class with shared "find CSV in Downloads" and "build filtered
+        DataFrame" methods (`checkers/base.py:BaseChecker`).
   - [x] One report object per CSV, each exposing per-error-type checks that
         return unique email lists (`checkers/`: `HoursBreakdown`,
         `OverlappingHours`, `NotStarted`, `Pending`, `Reporter`).
   - [ ] Encode the full earn-code rule set (REG, VAC, SICK, HOL, HLW, OT,
         OT2, SHF, PER, MD, BRV, VLT/JRY) per job class (OO/PP/WW vs UU/VV).
-- [ ] Wire up `seasonal_days` from `.env` (currently unused).
-- [ ] Restore/implement the commented-out `zero_hours_list` check in
-      `checkers/status.py`.
+- [ ] Wire up `seasonal_days` from `.env` (currently unused; see
+      `HoursBreakdown.seasonal_detection_type`/`_date` stubs).
+- [ ] Restore/implement `Pending.zero_hours_list` in `checkers/status.py`.

@@ -636,11 +636,10 @@ wheels = [
 [[package]]
 name = "payroll-checker"
 version = "0.1.1"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "matplotlib" },
     { name = "pandas" },
-    { name = "pytest-cov" },
     { name = "pywin32" },
     { name = "validators" },
 ]
@@ -648,6 +647,7 @@ dependencies = [
 [package.optional-dependencies]
 dev = [
     { name = "pytest" },
+    { name = "pytest-cov" },
     { name = "ruff" },
 ]
 
@@ -656,7 +656,7 @@ requires-dist = [
     { name = "matplotlib" },
     { name = "pandas" },
     { name = "pytest", marker = "extra == 'dev'" },
-    { name = "pytest-cov", specifier = ">=7.1.0" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=7.1.0" },
     { name = "pywin32", specifier = ">=312" },
     { name = "pywin32", marker = "sys_platform == 'win32'" },
     { name = "ruff", marker = "extra == 'dev'", specifier = "==0.15.22" },

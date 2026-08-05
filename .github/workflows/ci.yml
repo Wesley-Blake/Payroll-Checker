@@ -7,7 +7,7 @@ on:
 
 jobs:
   test:
-    # support.py imports win32com.client (pywin32) at module load time,
+    # outlook.py imports win32com.client (pywin32) at module load time,
     # so tests can only run on a Windows runner.
     runs-on: windows-latest
     strategy:

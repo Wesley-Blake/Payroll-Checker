@@ -4,40 +4,37 @@ import logging
 from pathlib import Path
 
 import pandas as pd
-from checkers.support import make_df, make_list, save_df_to_downloads
 from pandas import DataFrame
+
+from payroll_checker.checkers.base import BaseChecker
+from payroll_checker.downloads import save_df_to_downloads
+from payroll_checker.validation import make_list
 
 logger = logging.getLogger(__name__)
 
 
-class HoursBreakdown:
+class HoursBreakdown(BaseChecker):
     """Compute overtime and holiday detection email recipient lists."""
+
+    EMAIL_HEADERS = ["EmplID", "PacificEmail"]
+    HOURS_HEADERS = [
+        "Empl_ID",
+        "JobECLS",
+        "earn_code",
+        "ts_entry_date",
+        "appr_id",
+        "earning_hours",
+    ]
 
     def __init__(self, file_hours: Path, file_email: Path, pay_period: int) -> None:
         """Build the hours dataframe for `pay_period`, joined to employee emails.
 
         `file_hours` is the timesheet breakdown-by-earn-code export; `file_email`
         is the active-employee export used only for its EmplID -> PacificEmail
-        mapping (`skip=True` since it isn't filtered by pay period).
+        mapping (not pay-period filtered, since it's a lookup table).
         """
-        email_df = make_df(file_email, pay_period, skip=True)
-        email_df = email_df[
-            [
-                "EmplID",
-                "PacificEmail",
-            ]
-        ].drop_duplicates()
-        self.hours_df = make_df(file_hours, pay_period)
-        self.hours_df = self.hours_df[
-            [
-                "Empl_ID",
-                "JobECLS",
-                "earn_code",
-                "ts_entry_date",
-                "appr_id",
-                "earning_hours",
-            ]
-        ]
+        email_df = self.build_dataframe(file_email, self.EMAIL_HEADERS, pay_period=None)
+        self.hours_df = self.build_dataframe(file_hours, self.HOURS_HEADERS, pay_period)
         self.hours_df = pd.merge(
             self.hours_df,
             email_df,
@@ -167,11 +164,19 @@ class HoursBreakdown:
             return []
         return make_list(result["PacificEmail"].dropna().unique().tolist())
 
-    def seasonal_deteciton_type(self):
-        """Not yet implemented (see `seasonal_days` in README To-do)."""
+    def seasonal_detection_type(self):
+        """Not yet implemented.
 
-    def seasonal_deteciton_date(self):
-        """Not yet implemented (see `seasonal_days` in README To-do)."""
+        TODO: implement per `.claude/CLAUDE.md` "seasonal_days" rules
+        (not yet configured/used).
+        """
+
+    def seasonal_detection_date(self):
+        """Not yet implemented.
+
+        TODO: implement per `.claude/CLAUDE.md` "seasonal_days" rules
+        (not yet configured/used).
+        """
 
     def holiday_detection_type(self, hol_list: list) -> list[str]:
         """Return emails for holiday-eligible employees missing HOL/HLW pay.

@@ -6,43 +6,24 @@ from pathlib import Path
 import pandas as pd
 from pandas import DataFrame
 
+from payroll_checker.checkers.base import BaseChecker
+
 logger = logging.getLogger(__name__)
 
 
-class Reporter:
+class Reporter(BaseChecker):
     """Generate payroll reports from the latest timesheet CSV."""
 
-    def __init__(self, file_hours: Path, output_dir: Path) -> None:
-        """Load the most recent timesheet breakdown CSV under `file_hours`.
+    def __init__(self, file: Path, output_dir: Path) -> None:
+        """Load the timesheet breakdown CSV at `file`.
 
-        `output_dir` is where generated reports are written.
+        `output_dir` is where generated reports are written. `file` is
+        typically resolved once via `BaseChecker.find_csv_in_downloads`
+        (the same "ts_break_down" export `HoursBreakdown` uses) and passed
+        in here, rather than re-scanning Downloads a second time.
         """
-        self.df: DataFrame = pd.read_csv(self._find_latest_timesheet_csv(file_hours))
+        self.df: DataFrame = pd.read_csv(file)
         self.output_dir = Path(output_dir)
-
-    def _find_latest_timesheet_csv(
-        self,
-        search_path: Path | None = None,
-    ) -> Path:
-        """Return the newest "ts_break_down_in_out_hours_by_earn_code" CSV.
-
-        Searches `search_path` (defaults to the user's Downloads folder).
-        """
-        if search_path is None:
-            search_path = Path.home() / "Downloads"
-        search_path = Path(search_path)
-        files = [
-            file
-            for file in search_path.iterdir()
-            if file.name.startswith(
-                "ts_break_down_in_out_hours_by_earn_code CSV Report"
-            )
-        ]
-        if not files:
-            msg = "No matching file found in the Downloads folder."
-            logger.error(msg)
-            raise FileNotFoundError(msg)
-        return max(files, key=lambda path: path.stat().st_mtime)
 
     def generate_union_meal_report(self) -> None:
         """Write the union meal report to the configured output directory."""
