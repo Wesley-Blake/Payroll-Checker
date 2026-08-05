@@ -3,6 +3,9 @@
 import argparse
 import logging
 
+from checkers.support import load_config
+from main.py import main
+
 logger = logging.getLogger(__name__)
 
 
@@ -21,3 +24,8 @@ def cli() -> argparse.Namespace:
     parser.add_argument("--reports", action="store_true", help="Run reports only.")
     parser.add_argument("--pay-period", type=int, help="Pay period manual override.")
     return parser.parse_args()
+
+
+if __name__ == "__main__":
+    config = load_config(cli())
+    main(config)

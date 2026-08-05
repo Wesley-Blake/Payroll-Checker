@@ -21,7 +21,8 @@ from checkers.support import (
     load_holidays,
     run_check,
 )
-from checkers.templates import (
+from cli import cli
+from templates.templates import (
     HOLIDAY_DATE_TEMPLATE,
     HOLIDAY_TYPE_TEMPLATE,
     INCORRECT_EARN_CODE_TEMPLATE,
@@ -33,7 +34,6 @@ from checkers.templates import (
     UNION_WEEKEND_OT_TEMPLATE,
     WEEKEND_OT_TEMPLATE,
 )
-from cli import cli
 
 logger = logging.getLogger(__name__)
 

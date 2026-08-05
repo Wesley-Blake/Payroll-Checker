@@ -1,11 +1,11 @@
 """Not-started / pending timesheet checks and status charts."""
 
+import datetime
 import logging
-from datetime import date
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-from checkers.support import collect_file, make_df, make_list, pay_period_check
+from checkers.support import make_df, make_list
 
 logger = logging.getLogger(__name__)
 
@@ -51,17 +51,8 @@ class Pending:
             return []
         return make_list(final_df["ApprEmail"].unique().tolist())
 
-    # def zero_hours_list(self) -> list[str]:
-    #    """Return active employee emails missing a status record for the pay period."""
-    #    zero_hours_df = self.active_df[
-    #        ~self.active_df["EmplID"].isin(self.status_df["EmplID"])
-    #    ].copy()
-    #    zero_hours_df = zero_hours_df[
-    #        ~zero_hours_df["EmplID"].isin(self.not_started_df["EmplID"])
-    #    ].copy()
-    #    return make_list(
-    #        zero_hours_df["PacificEmail"].dropna().unique().tolist()
-    #    )
+    def zero_hours_list(self) -> list[str]:
+        pass
 
     def plot_timesheet_statuses(
         self,
@@ -70,7 +61,7 @@ class Pending:
     ) -> None:
         """Generate a bar chart of timesheet statuses and save it to a file."""
         plt.style.use("dark_background")
-        year = date.today().year
+        year = datetime.datetime.now(tz=datetime.UTC).date.today().year
         white_list = ["EmplID", "job_ecls", "ts_Status"]
         df = self.status_df[white_list].drop_duplicates()
         status_counts = df["ts_Status"].value_counts()
@@ -98,7 +89,7 @@ class Pending:
     ) -> None:
         """Generate a stacked bar chart of timesheet statuses by job class."""
         plt.style.use("dark_background")
-        year = date.today().year
+        year = datetime.datetime.now(tz=datetime.UTC).date.today().year
         white_list = ["EmplID", "job_ecls", "ts_Status"]
         df = self.status_df[white_list].drop_duplicates()
         counts = df.groupby(["ts_Status", "job_ecls"]).size().unstack(fill_value=0)
@@ -120,22 +111,3 @@ class Pending:
             ax.bar_label(container, labels=labels, label_type="center")
         plt.tight_layout()
         plt.savefig(save_path)
-
-
-if __name__ == "__main__":
-    test = Pending(
-        collect_file("Time_Sheet_Status_&_Comments"),
-        pay_period_check(),
-    )
-    print(
-        test.plot_timesheet_statuses(
-            save_path=Path.home() / "Downloads" / "test_status_distribution.png"
-        )
-    )
-    print(
-        test.plot_timesheet_statuses_by_job_ecls(
-            save_path=Path.home()
-            / "Downloads"
-            / "test_status_distribution_by_job_ecls.png"
-        )
-    )
