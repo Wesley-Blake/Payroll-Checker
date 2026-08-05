@@ -40,8 +40,9 @@ logger = logging.getLogger(__name__)
 
 def main(config: Config | None = None):
     """Run every check for the current pay period and email/report results."""
+    args = cli() if config is None else None  # --help/-h prints usage and exits here
     configure_logging()
-    config = config or load_config(cli())
+    config = config or load_config(args)
     pay_period = config.pay_period
     timesheet_link = config.timesheet_link
 

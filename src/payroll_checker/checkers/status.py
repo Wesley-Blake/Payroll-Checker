@@ -61,7 +61,7 @@ class Pending:
     ) -> None:
         """Generate a bar chart of timesheet statuses and save it to a file."""
         plt.style.use("dark_background")
-        year = datetime.datetime.now(tz=datetime.UTC).date.today().year
+        year = datetime.datetime.now(tz=datetime.UTC).year
         white_list = ["EmplID", "job_ecls", "ts_Status"]
         df = self.status_df[white_list].drop_duplicates()
         status_counts = df["ts_Status"].value_counts()
@@ -89,7 +89,7 @@ class Pending:
     ) -> None:
         """Generate a stacked bar chart of timesheet statuses by job class."""
         plt.style.use("dark_background")
-        year = datetime.datetime.now(tz=datetime.UTC).date.today().year
+        year = datetime.datetime.now(tz=datetime.UTC).year
         white_list = ["EmplID", "job_ecls", "ts_Status"]
         df = self.status_df[white_list].drop_duplicates()
         counts = df.groupby(["ts_Status", "job_ecls"]).size().unstack(fill_value=0)

@@ -2,10 +2,9 @@
 
 import argparse
 import configparser
-import datetime
 import logging
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import date, datetime, timedelta
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
@@ -60,10 +59,16 @@ def load_config(args: argparse.Namespace) -> Config:
 
 
 def configure_logging() -> None:
-    """Log DEBUG+ to a rotating file in the cwd.
+    """Log DEBUG+ from this program to a rotating file in the cwd.
 
     Runs are typically unattended (Task Scheduler), so the file handler
     is what makes a failed run diagnosable after the fact.
+
+    Root stays at WARNING: third-party libraries (matplotlib, PIL, ...)
+    do their own noisy DEBUG logging (e.g. matplotlib's backend
+    auto-selection logs a caught ImportError + traceback for every GUI
+    backend it tries before settling on one) that has nothing to do with
+    this program failing. Only our own loggers are raised to DEBUG.
     """
     formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
 
@@ -76,7 +81,13 @@ def configure_logging() -> None:
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(formatter)
 
-    logging.basicConfig(level=logging.DEBUG, handlers=[file_handler])
+    logging.basicConfig(level=logging.WARNING, handlers=[file_handler])
+
+    # This program's modules import as top-level packages (e.g.
+    # `checkers.support`, `cli`, `__main__`) rather than under a single
+    # `payroll_checker` namespace, so each root is raised individually.
+    for name in ("__main__", "cli", "checkers", "templates"):
+        logging.getLogger(name).setLevel(logging.DEBUG)
 
 
 def load_holidays() -> list[str]:
@@ -92,7 +103,7 @@ def load_holidays() -> list[str]:
         holiday = raw_holiday.strip()
         if not holiday:
             continue
-        datetime.datetime.fromisoformat(holiday)
+        datetime.fromisoformat(holiday)
         holiday_list.append(holiday)
     return holiday_list
 
@@ -124,28 +135,22 @@ def make_list(check: list) -> list[str]:
 
 
 def pay_period_check(first_sunday: str) -> int:
-    """Ask the user for the current pay period number (1-26)."""
+    """Compute the current pay period number (1-26) from the first Sunday."""
     if not first_sunday:
         msg = "First Sunday date is not provided."
         logger.error(msg)
         raise ValueError(msg)
-    # If this fails program should fail.
-    datetime.datetime.fromisoformat(first_sunday)
     pay_period = 0
-    current_date = datetime.datetime.fromisoformat(first_sunday)
-    # This loop should be a negative value. past - present
-    while (current_date - datetime.datetime.now(datetime.UTC)).days < 0:
+    current_date = date.fromisoformat(first_sunday)
+    today = date.today()
+    # current_date starts at (or before) today; walk forward 14 days at a
+    # time until it passes today, counting periods as we go.
+    while current_date <= today:
         pay_period += 1
         current_date += timedelta(days=14)
         # Pay years can spill over, but anything greater than 1 is wrong.
-        if (
-            datetime.datetime.now(datetime.UTC).year - current_date.year > 1
-            or current_date.year - datetime.datetime.now(datetime.UTC).year > 1
-        ):
-            msg = (
-                "Check your dates in Env!"
-                + f"{datetime.datetime.now(datetime.UTC)=} - {current_date=}"
-            )
+        if abs(today.year - current_date.year) > 1:
+            msg = f"Check your dates in Env! {today=} - {current_date=}"
             logger.error(msg)
             raise ValueError(msg)
     if pay_period == 0:
