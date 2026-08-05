@@ -59,10 +59,7 @@ class HoursBreakdown:
         assert isinstance(self.hours_df, DataFrame)
 
     def incorrect_earn_code(self) -> list[str]:
-        """
-        Return emails for employees with STK earn codes.
-        current list: SHD
-        """
+        """Return emails for employees with an SHD earn code."""
         stk_earn_codes = ["SHD"]
         final_df = self.hours_df[self.hours_df["earn_code"].isin(stk_earn_codes)].copy()
         save_df_to_downloads(final_df, "incorrect_earn_code.csv")

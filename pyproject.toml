@@ -12,8 +12,6 @@ dependencies = [
     "pywin32>=312",
     "pytest-cov>=7.1.0",
 ]
-[project.scripts]
-payroll_checker = "__main__:main"
 
 [project.optional-dependencies]
 dev = [

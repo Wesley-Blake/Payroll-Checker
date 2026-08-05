@@ -71,7 +71,7 @@ python -m payroll_checker --pay-period 5  # override the auto-detected pay perio
 
 ```
 src/payroll_checker/
-  __main__.py               # entry point / check orchestration
+  main.py                   # entry point / check orchestration
   cli.py                    # argparse CLI (--dry-run, --reports, --pay-period)
   checkers/
     hours_breakdown.py       # earn code, overtime, holiday checks
@@ -96,14 +96,14 @@ the new module layout.
 
 ## To do
 
-- [ ] Add a proper logger for failures (see `__main__.py` docstring) — logging
+- [ ] Add a proper logger for failures (see `main.py` docstring) — logging
       is only partially wired up (`src/payroll_checker/checkers/support.py`).
 - [ ] Automated file collection (e.g. pulling exports instead of relying on
       manual downloads).
 - [ ] `pyautogui`-based automation for steps that still require manual
       interaction.
 - [ ] Windows Task Scheduler integration for unattended runs.
-- [ ] Refactor per `claude_instructions.md`:
+- [ ] Refactor per `.claude/CLAUDE.md`:
   - [ ] Parent class with shared "find CSV in Downloads" and "build filtered
         DataFrame" methods.
   - [x] One report object per CSV, each exposing per-error-type checks that

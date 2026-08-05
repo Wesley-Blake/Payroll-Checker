@@ -48,7 +48,6 @@ def main(config: Config | None = None):
 
     logger.info("Pay period: %s", pay_period)
 
-    # Create object, if this fails, program should end.
     hours_breakdown = HoursBreakdown(
         collect_file("ts_break_down"), collect_file("Active_Empls"), pay_period
     )
@@ -56,7 +55,6 @@ def main(config: Config | None = None):
     not_started = NotStarted(collect_file("not_yet_started_WTE"), pay_period)
     pending = Pending(collect_file("Comments"), pay_period)
     emailer = WinEmail()
-    # End object creation.
 
     list_o_holidays = load_holidays()
     checks = [

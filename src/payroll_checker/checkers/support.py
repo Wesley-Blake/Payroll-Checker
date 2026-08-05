@@ -62,13 +62,9 @@ def configure_logging() -> None:
     """Log DEBUG+ from this program to a rotating file in the cwd.
 
     Runs are typically unattended (Task Scheduler), so the file handler
-    is what makes a failed run diagnosable after the fact.
-
-    Root stays at WARNING: third-party libraries (matplotlib, PIL, ...)
-    do their own noisy DEBUG logging (e.g. matplotlib's backend
-    auto-selection logs a caught ImportError + traceback for every GUI
-    backend it tries before settling on one) that has nothing to do with
-    this program failing. Only our own loggers are raised to DEBUG.
+    is what makes a failed run diagnosable after the fact. Root stays at
+    WARNING to avoid noisy third-party DEBUG logging; only this
+    program's own loggers are raised to DEBUG.
     """
     formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
 
@@ -83,9 +79,8 @@ def configure_logging() -> None:
 
     logging.basicConfig(level=logging.WARNING, handlers=[file_handler])
 
-    # This program's modules import as top-level packages (e.g.
-    # `checkers.support`, `cli`, `__main__`) rather than under a single
-    # `payroll_checker` namespace, so each root is raised individually.
+    # Modules import as top-level packages (not under `payroll_checker`), so
+    # each root is raised individually.
     for name in ("__main__", "cli", "checkers", "templates"):
         logging.getLogger(name).setLevel(logging.DEBUG)
 
@@ -111,11 +106,9 @@ def load_holidays() -> list[str]:
 def make_list(check: list) -> list[str]:
     """Validate a list of emails and return the same list if valid.
 
-    Rejects anything that isn't a well-formed address, contains control
-    characters (which the `validators` regex can miss at the end of a
-    string), or falls outside `ALLOWED_EMAIL_DOMAIN`. Invalid values are
-    never logged verbatim since these lists are sourced from HR exports
-    and may contain PII.
+    Rejects malformed addresses, control characters, or domains other than
+    `ALLOWED_EMAIL_DOMAIN`. Invalid values are never logged verbatim, since
+    these lists are sourced from HR exports and may contain PII.
     """
     if not isinstance(check, list):
         msg = "Input must be a list"
@@ -249,15 +242,12 @@ class WinEmail:
         """
         if reports:
             return
-        # Defense-in-depth: re-validate here even though callers are
-        # expected to have already run bcc through make_list(), so a
-        # future caller that forgets validation can't get unvalidated
-        # strings into the BCC line.
+        # Defense-in-depth: re-validate even though callers should already
+        # have run bcc through make_list().
         bcc = make_list(bcc)
         mail = None
         try:
             mail = self.outlook.CreateItem(0)
-            # mail.CC = cc
             mail.BCC = "; ".join(bcc)
             mail.Subject = f"Pay Period: BW{pay_period}"
             if self.attachment.is_file():
