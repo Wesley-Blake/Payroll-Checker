@@ -21,7 +21,7 @@ from checkers.support import (
     load_holidays,
     run_check,
 )
-from cli.cli.cli import cli
+from cli.arguments import get_arguments
 from templates.templates import (
     HOLIDAY_DATE_TEMPLATE,
     HOLIDAY_TYPE_TEMPLATE,
@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 
 def main(config: Config | None = None):
     """Run every check for the current pay period and email/report results."""
-    args = cli() if config is None else None  # --help/-h prints usage and exits here
+    args = get_arguments()  # --help/-h prints usage and exits here
     configure_logging()
     config = config or load_config(args)
     pay_period = config.pay_period

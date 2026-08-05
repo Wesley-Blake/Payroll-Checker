@@ -3,7 +3,7 @@
 import argparse
 
 
-def cli() -> argparse.Namespace:
+def get_arguments() -> argparse.Namespace:
     """Parse and return the command-line arguments for a run.
 
     Options:
