@@ -1,9 +1,6 @@
 """Command-line argument parsing for the payroll checker."""
 
 import argparse
-import logging
-
-logger = logging.getLogger(__name__)
 
 
 def cli() -> argparse.Namespace:

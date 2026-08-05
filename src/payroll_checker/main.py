@@ -21,7 +21,7 @@ from checkers.support import (
     load_holidays,
     run_check,
 )
-from cli import cli
+from cli.cli.cli import cli
 from templates.templates import (
     HOLIDAY_DATE_TEMPLATE,
     HOLIDAY_TYPE_TEMPLATE,
