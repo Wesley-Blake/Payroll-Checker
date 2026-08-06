@@ -21,6 +21,7 @@ dev = [
 
 [project.scripts]
 payroll-checker = "payroll_checker.main:main"
+payroll-checker-gui = "payroll_checker.gui.app:main"
 
 [build-system]
 requires = ["uv_build>=0.11.32,<0.12.0"]

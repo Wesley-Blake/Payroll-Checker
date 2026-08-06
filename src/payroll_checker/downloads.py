@@ -39,6 +39,17 @@ def find_latest_file(keyword: str, directory: Path | None = None) -> Path:
     return latest_file
 
 
+def has_file(keyword: str, directory: Path | None = None) -> bool:
+    """True if `directory` contains at least one file whose name contains `keyword`.
+
+    A non-raising, non-logging sibling of `find_latest_file`, for a preflight
+    scan (`runner.find_missing_reports`) that needs to check many keywords up
+    front without stopping -- or logging an error -- on the first miss.
+    """
+    directory = directory or DOWNLOADS_DIR
+    return directory.is_dir() and any(keyword in f.name for f in directory.iterdir())
+
+
 def save_df_to_downloads(
     df: DataFrame, filename: str, directory: Path | None = None
 ) -> None:

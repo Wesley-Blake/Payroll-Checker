@@ -4,7 +4,13 @@ import datetime
 import logging
 from pathlib import Path
 
-import matplotlib.pyplot as plt
+import matplotlib
+
+matplotlib.use("Agg")  # headless: this module only ever saves PNGs (never
+# plt.show()s), and the GUI app renders these charts from a background worker
+# thread (gui/worker.py) -- an interactive backend there warns/can fail.
+
+import matplotlib.pyplot as plt  # noqa: E402 -- must come after matplotlib.use()
 
 from payroll_checker.checkers.base import BaseChecker
 from payroll_checker.validation import make_list

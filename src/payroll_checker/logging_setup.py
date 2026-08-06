@@ -4,6 +4,8 @@ import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
+LOG_FORMAT = "%(asctime)s %(levelname)s %(name)s: %(message)s"
+
 
 def configure_logging() -> None:
     """Log DEBUG+ from this program to a rotating file in the cwd.
@@ -14,7 +16,7 @@ def configure_logging() -> None:
     `payroll_checker` logger (and its children, by inheritance) is raised
     to DEBUG.
     """
-    formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+    formatter = logging.Formatter(LOG_FORMAT)
 
     file_handler = RotatingFileHandler(
         Path.cwd() / "payroll_checker.log",

@@ -4,6 +4,10 @@ from pathlib import Path
 
 import pandas as pd
 
+# `checkers.status` forces the headless "Agg" backend itself at import time
+# (it only ever saves PNGs, never shows a window), so chart-generating tests
+# never need a display -- no `matplotlib.use(...)` workaround needed here.
+
 
 def write_csv(directory: Path, filename: str, rows: list[dict]) -> Path:
     """Write `rows` (a list of column->value dicts) as a CSV under `directory`.

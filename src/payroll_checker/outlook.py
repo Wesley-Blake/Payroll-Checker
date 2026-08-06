@@ -6,12 +6,54 @@ import configparser
 import logging
 from pathlib import Path
 
+import pythoncom
 import win32com.client as win32
 
 from payroll_checker.config import dotenv_path
 from payroll_checker.validation import make_list
 
 logger = logging.getLogger(__name__)
+
+
+def get_outlook_status() -> tuple[bool, str | None]:
+    """Return `(connected, current_user_email)` for the local Outlook install.
+
+    Does its own COM dispatch, independent of any `WinEmail` instance, so a
+    caller (e.g. a GUI) can poll this repeatedly without requiring a valid
+    `.env` or holding a mail-drafting session open. Never raises: any
+    failure (Outlook not installed, not running, no profile configured) is
+    reported as `(False, None)`.
+
+    Safe to call from any thread: COM requires each thread that touches it
+    to initialize its own apartment first, so this does that itself
+    (`CoInitialize`/`CoUninitialize`, balanced within this one call) rather
+    than assuming the caller has already done so.
+    """
+    pythoncom.CoInitialize()
+    try:
+        outlook = win32.Dispatch("outlook.application")
+        current_user = outlook.Session.CurrentUser
+        email = None
+        if current_user is not None:
+            try:
+                # Preferred: on-prem Exchange accounts populate `.Address`
+                # with a legacy X.500 DN (e.g. "/o=ExchangeLabs/..."), not a
+                # readable email - the SMTP address off the exchange user is
+                # what we actually want to show.
+                email = current_user.AddressEntry.GetExchangeUser().PrimarySmtpAddress
+            except Exception:
+                pass
+            if not email:
+                # Non-Exchange accounts (POP/IMAP, Outlook.com, ...) don't
+                # have an ExchangeUser at all; `.Address` is already a
+                # normal email for those.
+                email = current_user.Address
+        return True, email
+    except Exception as e:
+        logger.debug("Outlook status check failed: %s", e)
+        return False, None
+    finally:
+        pythoncom.CoUninitialize()
 
 
 class WinEmail:
@@ -69,9 +111,3 @@ class WinEmail:
             msg = f"Error sending email: {e}"
             logger.error(msg)
             raise RuntimeError(msg) from e
-        logger.info(
-            "Email for pay period %s %s to %d recipient(s).",
-            pay_period,
-            "displayed (dry run)" if dry_run else "sent",
-            len(bcc),
-        )

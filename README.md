@@ -76,13 +76,34 @@ equivalent to `python -m payroll_checker`:
 payroll-checker --dry-run
 ```
 
+### GUI
+
+A desktop GUI (tkinter, no extra dependencies) is available for interactive,
+ad-hoc runs — pick which of the 4 reports to run, see whether Outlook is
+reachable and which mailbox it'll send from, choose different input/output
+folders than `Downloads`, and watch progress as it runs. It calls the same
+`runner.run()` the CLI does, so behavior for a given report/pay-period is
+identical either way.
+
+```sh
+python -m payroll_checker.gui
+# or, once installed:
+payroll-checker-gui
+```
+
+Defaults to dry-run (opens Outlook drafts for review instead of sending) and
+asks for confirmation before a real send. Folder choices, selected reports,
+and the dry-run toggle are remembered between launches in a `gui_settings.json`
+file next to `.env` — separate from it, since `.env` is hand-edited program
+config and `gui_settings.json` is GUI-only state the app writes itself.
+
 ## Project structure
 
 ```
 src/payroll_checker/
   main.py                   # CLI entry point: parse args, resolve config, call runner.run()
   __main__.py                # enables `python -m payroll_checker`
-  runner.py                   # orchestrates all checks for a pay period, sends emails
+  runner.py                   # builds/runs the selected reports for a pay period, sends emails
   cli.py                       # argparse CLI (--dry-run, --reports, --pay-period)
   config.py                     # Config, .env loading, pay-period math
   downloads.py                   # Downloads-folder file discovery + CSV output (single source of truth)
@@ -96,8 +117,14 @@ src/payroll_checker/
     overlapping.py                     # overlapping timesheet entry check
     status.py                           # not-started / pending checks + status charts
     reporter.py                          # overtime / union meal / weekend OT CSV reports
-tests/                        # config, base-checker, and Downloads-I/O smoke tests
-pyproject.toml                # project metadata, dependencies, console-script entry point
+  gui/                                   # tkinter desktop GUI (see "GUI" above)
+    app.py                                # composition root: window, worker thread, wiring
+    widgets.py                             # tkinter layout only, no orchestration knowledge
+    worker.py                               # runs runner.run() on a background thread
+    settings.py                              # gui_settings.json load/save
+    log_handler.py                            # forwards log records into the GUI's log pane
+tests/                        # config, base-checker, runner, and Downloads-I/O tests
+pyproject.toml                # project metadata, dependencies, console-script entry points
 ```
 
 ## Testing
@@ -110,8 +137,14 @@ uv run pytest
 Current coverage is a smoke-test scaffold for the shared plumbing: `.env`/
 pay-period config loading (`tests/test_config.py`), the shared checker base
 class's CSV discovery and DataFrame loading (`tests/test_base_checker.py`),
-and Downloads file I/O (`tests/test_downloads.py`). Per-checker payroll-rule
-coverage (e.g. `HoursBreakdown`'s overtime/holiday logic) is a follow-up.
+Downloads file I/O (`tests/test_downloads.py`), per-report selection and
+directory overrides in the runner (`tests/test_runner.py`), the Outlook
+connection-check helper's failure path (`tests/test_outlook_status.py`),
+and GUI settings persistence (`tests/gui/test_settings.py`). Per-checker
+payroll-rule coverage (e.g. `HoursBreakdown`'s overtime/holiday logic) is a
+follow-up. The GUI's widgets/threading code itself is manually verified,
+not unit tested — same convention as `outlook.py`, since both need a live
+Windows environment (Outlook, or a display) to meaningfully exercise.
 
 ## To do
 
