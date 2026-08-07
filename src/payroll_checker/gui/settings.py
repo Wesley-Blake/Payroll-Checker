@@ -12,6 +12,7 @@ from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 
 from payroll_checker.config import dotenv_path
+from payroll_checker.downloads import DOWNLOADS_DIR
 from payroll_checker.runner import REPORT_NAMES
 
 logger = logging.getLogger(__name__)
@@ -50,7 +51,12 @@ def load_settings() -> GuiSettings:
     """
     path = settings_path()
     if not path.is_file():
-        return GuiSettings()
+        logger.info("No %s found; creating one with Downloads-folder defaults.", path)
+        defaults = GuiSettings(
+            input_dir=str(DOWNLOADS_DIR), output_dir=str(DOWNLOADS_DIR)
+        )
+        save_settings(defaults)
+        return defaults
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
         unknown = data.keys() - _FIELD_NAMES
