@@ -31,6 +31,8 @@ MANIFEST
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
+# ...except our own hand-written, version-controlled build spec.
+!payroll_checker_gui.spec
 
 # Installer logs
 pip-log.txt
@@ -209,3 +211,4 @@ __marimo__/
 # My Additions
 .vscode/
 *.log*
+*.json
