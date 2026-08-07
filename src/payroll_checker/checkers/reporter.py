@@ -3,7 +3,6 @@
 import logging
 from pathlib import Path
 
-import pandas as pd
 from pandas import DataFrame
 
 from payroll_checker.checkers.base import BaseChecker
@@ -12,17 +11,17 @@ logger = logging.getLogger(__name__)
 
 
 class Reporter(BaseChecker):
-    """Generate payroll reports from the latest timesheet CSV."""
+    """Generate payroll reports from an already-loaded timesheet dataframe."""
 
-    def __init__(self, file: Path, output_dir: Path) -> None:
-        """Load the timesheet breakdown CSV at `file`.
+    def __init__(self, df: DataFrame, output_dir: Path) -> None:
+        """Build reports from `df`, the "ts_break_down" export.
 
-        `output_dir` is where generated reports are written. `file` is
-        typically resolved once via `BaseChecker.find_csv_in_downloads`
-        (the same "ts_break_down" export `HoursBreakdown` uses) and passed
-        in here, rather than re-scanning Downloads a second time.
+        `output_dir` is where generated reports are written. `df` is
+        `HoursBreakdown.raw_hours_df` -- the same "ts_break_down" export
+        `HoursBreakdown` already read and parsed, passed in here so this
+        class doesn't `pd.read_csv` the same file a second time.
         """
-        self.df: DataFrame = pd.read_csv(file)
+        self.df: DataFrame = df
         self.output_dir = Path(output_dir)
 
     def generate_union_meal_report(self) -> None:

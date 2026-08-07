@@ -62,7 +62,7 @@ class App(tk.Tk):
         self._drain_queue()
 
     def _build_widgets(self) -> None:
-        """Lay out two columns: reports/folders on the left, the Outlook
+        """Lay out two columns: settings/reports on the left, the Outlook
         indicator/run controls/log pane on the right (indicator top-right,
         run controls directly under it, log pane filling the rest).
         """
@@ -80,7 +80,11 @@ class App(tk.Tk):
         right.columnconfigure(0, weight=1)
         right.rowconfigure(2, weight=1)  # log pane row grows with the window
 
-        # -- Left column: which reports to run, and where -----------------
+        # -- Left column: settings, and which reports to run --------------
+
+        ttk.Button(left, text="Settings...", command=self._open_settings_dialog).pack(
+            anchor="w", **pad
+        )
 
         reports = [(key, REPORT_LABELS[key]) for key in REPORT_NAMES]
         self.report_checkboxes = widgets.build_report_checkboxes(left, reports)
@@ -88,24 +92,15 @@ class App(tk.Tk):
             var.set(key in self.settings.selected_reports)
         self.report_checkboxes.frame.pack(anchor="w", fill="x", **pad)
 
-        folders_frame = ttk.LabelFrame(left, text="Folders")
-        self.input_dir = widgets.build_directory_picker(
-            folders_frame, "Input folder:", self.settings.input_dir or str(DOWNLOADS_DIR)
-        )
-        self.input_dir.frame.pack(fill="x", padx=8, pady=(6, 3))
-        self.output_dir = widgets.build_directory_picker(
-            folders_frame, "Output folder:", self.settings.output_dir or str(DOWNLOADS_DIR)
-        )
-        self.output_dir.frame.pack(fill="x", padx=8, pady=(3, 6))
-        folders_frame.pack(anchor="w", fill="x", **pad)
-
         # -- Right column: connection status, run controls, log pane ------
 
         self.connection = widgets.build_connection_indicator(right)
         self.connection.frame.grid(row=0, column=0, sticky="ne", **pad)
 
+        # Dry run always starts checked, regardless of what was left
+        # checked last session -- not read from `self.settings`.
         self.run_controls = widgets.build_run_controls(
-            right, self.settings.dry_run, on_run=self._on_run_clicked
+            right, True, on_run=self._on_run_clicked
         )
         self.run_controls.frame.grid(row=1, column=0, sticky="ew", **pad)
 
@@ -119,6 +114,48 @@ class App(tk.Tk):
         configure_logging()
         handler = QueueLogHandler(self.message_queue)
         logging.getLogger("payroll_checker").addHandler(handler)
+
+    # -- Settings dialog ---------------------------------------------------
+
+    def _open_settings_dialog(self) -> None:
+        """Input/output folders, in a modal dialog off the main window.
+        `self.settings` (not these widgets) is the persistent source of
+        truth, so the dialog can be freely rebuilt from scratch each time
+        it's opened -- each field just seeds from whatever's currently in
+        `self.settings`.
+        """
+        dialog = tk.Toplevel(self)
+        dialog.title("Settings")
+        dialog.transient(self)
+        dialog.resizable(False, False)
+        pad = {"padx": 10, "pady": 6}
+
+        input_picker = widgets.build_directory_picker(
+            dialog, "Input folder:", self.settings.input_dir or str(DOWNLOADS_DIR)
+        )
+        input_picker.frame.pack(fill="x", **pad)
+        output_picker = widgets.build_directory_picker(
+            dialog, "Output folder:", self.settings.output_dir or str(DOWNLOADS_DIR)
+        )
+        output_picker.frame.pack(fill="x", **pad)
+
+        # Persist each field immediately on change, same as the rest of
+        # the app -- no separate Save button needed.
+        input_picker.path_var.trace_add(
+            "write",
+            lambda *_a: self._persist_settings(input_dir=input_picker.path_var.get()),
+        )
+        output_picker.path_var.trace_add(
+            "write",
+            lambda *_a: self._persist_settings(output_dir=output_picker.path_var.get()),
+        )
+
+        ttk.Button(dialog, text="Close", command=dialog.destroy).pack(pady=(0, 10))
+
+        # Grab focus only after the dialog is actually mapped, otherwise
+        # grab_set() can raise on some window managers.
+        dialog.wait_visibility()
+        dialog.grab_set()
 
     # -- Outlook connection indicator ------------------------------------
 
@@ -160,7 +197,7 @@ class App(tk.Tk):
         ):
             return
 
-        self._save_current_settings(selected, dry_run)
+        self._persist_settings()
 
         self.run_controls.run_button.state(["disabled"])
         widgets.clear_log(self.log_pane)
@@ -170,17 +207,28 @@ class App(tk.Tk):
         self.run_thread = run_in_background(
             self.message_queue,
             reports=selected,
-            input_dir=Path(self.input_dir.path_var.get()),
-            output_dir=Path(self.output_dir.path_var.get()),
+            input_dir=Path(self.settings.input_dir or DOWNLOADS_DIR),
+            output_dir=Path(self.settings.output_dir or DOWNLOADS_DIR),
             dry_run=dry_run,
         )
 
-    def _save_current_settings(self, selected_reports: tuple[str, ...], dry_run: bool) -> None:
+    def _persist_settings(
+        self,
+        *,
+        input_dir: str | None = None,
+        output_dir: str | None = None,
+    ) -> None:
+        """Update `self.settings` and save it. Any field not passed keeps
+        its current `self.settings` value -- callers only pass the field
+        that actually changed (e.g. one Settings-dialog widget), except
+        `selected_reports`, which is always refreshed live from the
+        checkboxes since those stay on the main window for the whole
+        session.
+        """
         self.settings = GuiSettings(
-            input_dir=self.input_dir.path_var.get(),
-            output_dir=self.output_dir.path_var.get(),
-            selected_reports=list(selected_reports),
-            dry_run=dry_run,
+            input_dir=input_dir if input_dir is not None else self.settings.input_dir,
+            output_dir=output_dir if output_dir is not None else self.settings.output_dir,
+            selected_reports=list(self._selected_reports()),
         )
         save_settings(self.settings)
 

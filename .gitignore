@@ -211,4 +211,4 @@ __marimo__/
 # My Additions
 .vscode/
 *.log*
-*.json
+*.json*

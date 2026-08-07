@@ -80,8 +80,8 @@ payroll-checker --dry-run
 
 A desktop GUI (tkinter, no extra dependencies) is available for interactive,
 ad-hoc runs — pick which of the 4 reports to run, see whether Outlook is
-reachable and which mailbox it'll send from, choose different input/output
-folders than `Downloads`, and watch progress as it runs. It calls the same
+reachable, choose different input/output folders than `Downloads` (via a
+Settings dialog), and watch progress as it runs. It calls the same
 `runner.run()` the CLI does, so behavior for a given report/pay-period is
 identical either way.
 
@@ -91,11 +91,39 @@ python -m payroll_checker.gui
 payroll-checker-gui
 ```
 
-Defaults to dry-run (opens Outlook drafts for review instead of sending) and
-asks for confirmation before a real send. Folder choices, selected reports,
-and the dry-run toggle are remembered between launches in a `gui_settings.json`
-file next to `.env` — separate from it, since `.env` is hand-edited program
-config and `gui_settings.json` is GUI-only state the app writes itself.
+Dry-run always starts checked on launch (opens Outlook drafts for review
+instead of sending), regardless of what was left checked last session, and
+unchecking it asks for confirmation before a real send. Folder choices and
+selected reports, but not the dry-run toggle, are remembered between
+launches in a `gui_settings.json` file next to `.env` — separate from it,
+since `.env` is hand-edited program config and `gui_settings.json` is
+GUI-only state the app writes itself.
+
+### Building a standalone .exe
+
+A double-clickable single-file `.exe` can be built with
+[PyInstaller](https://pyinstaller.org/) via `payroll_checker_gui.spec`:
+
+```sh
+uv sync --extra build
+uv run pyinstaller payroll_checker_gui.spec
+```
+
+(or, without uv: `pip install -e .[build]` then `pyinstaller payroll_checker_gui.spec`)
+
+The result is `dist/PayrollChecker.exe`. Two things to know before running it:
+
+- **Working directory matters.** `.env`, `gui_settings.json`, and
+  `payroll_checker.log` are all resolved relative to the process's current
+  working directory, not the `.exe`'s own folder. Double-clicking the `.exe`
+  from Explorer sets the working directory to wherever the `.exe` lives, so
+  keeping `PayrollChecker.exe` in the same folder as `.env` works; if you
+  launch it via a shortcut instead, set the shortcut's "Start in" field to
+  that folder too.
+- **First run may get flagged.** Unsigned PyInstaller single-file
+  executables commonly trigger a Windows SmartScreen or antivirus warning
+  the first time they're run — expected for an unsigned/uncommon binary,
+  not a sign anything's wrong.
 
 ## Project structure
 

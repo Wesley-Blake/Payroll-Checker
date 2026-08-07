@@ -26,11 +26,12 @@ def find_latest_file(keyword: str, directory: Path | None = None) -> Path:
         logger.error(msg)
         raise AssertionError(msg)
     latest_file = None
+    latest_mtime = None
     for file in directory.iterdir():
-        if keyword in file.name and (
-            latest_file is None or file.stat().st_mtime > latest_file.stat().st_mtime
-        ):
-            latest_file = file
+        if keyword in file.name:
+            mtime = file.stat().st_mtime
+            if latest_mtime is None or mtime > latest_mtime:
+                latest_file, latest_mtime = file, mtime
     if latest_file is None:
         msg = f"No file containing '{keyword}' found in {directory}."
         logger.error(msg)

@@ -26,13 +26,14 @@ class BaseChecker:
         return find_latest_file(keyword, directory)
 
     @staticmethod
-    def build_dataframe(
-        file: Path,
-        headers: list[str],
-        pay_period: int | None = None,
-        drop_duplicates: bool = True,
-    ) -> DataFrame:
-        """Load `file`, keep only `headers`, and verify `pay_period` if given.
+    def read_csv(file: Path, pay_period: int | None = None) -> DataFrame:
+        """Load `file` in full and verify `pay_period` if given.
+
+        Split out of `build_dataframe` so a caller that needs the *whole*
+        dataframe -- not just a column subset -- can get it without a
+        second `pd.read_csv` of the same file (e.g. `HoursBreakdown` shares
+        its read with `Reporter` via `raw_hours_df`, see
+        `runner._build_breakdown_of_hours_checks`).
 
         Verification (not filtering): the export is already scoped to one
         pay period by the source system, this only asserts it's the
@@ -47,6 +48,17 @@ class BaseChecker:
         df = pd.read_csv(file)
         if pay_period is not None:
             _verify_pay_period(df, pay_period, file)
+        return df
+
+    @staticmethod
+    def build_dataframe(
+        file: Path,
+        headers: list[str],
+        pay_period: int | None = None,
+        drop_duplicates: bool = True,
+    ) -> DataFrame:
+        """Load `file`, keep only `headers`, and verify `pay_period` if given."""
+        df = BaseChecker.read_csv(file, pay_period)
         df = df[headers]
         return df.drop_duplicates() if drop_duplicates else df
 

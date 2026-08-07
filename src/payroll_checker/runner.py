@@ -101,7 +101,7 @@ def run(
     # Set only when their owning report is selected, since the charts and
     # union-meal report are generated from them after the checks run.
     pending: Pending | None = None
-    hours_file: Path | None = None
+    hours_breakdown: HoursBreakdown | None = None
 
     if "status_of_timesheet" in reports:
         report_checks, pending = _build_status_of_timesheet_checks(
@@ -113,7 +113,7 @@ def run(
     if "not_started" in reports:
         checks += _build_not_started_checks(pay_period, timesheet_link, input_dir)
     if "breakdown_of_hours" in reports:
-        report_checks, hours_file = _build_breakdown_of_hours_checks(
+        report_checks, hours_breakdown = _build_breakdown_of_hours_checks(
             pay_period, timesheet_link, input_dir
         )
         checks += report_checks
@@ -141,8 +141,8 @@ def run(
             save_path=output_dir / "Timesheet_Status_Distribution_by_Job_Ecls.png",
         )
 
-    if hours_file is not None:
-        Reporter(hours_file, output_dir).generate_union_meal_report()
+    if hours_breakdown is not None:
+        Reporter(hours_breakdown.raw_hours_df, output_dir).generate_union_meal_report()
 
     logger.info("Run complete.")
     if progress:
@@ -203,11 +203,12 @@ def _build_not_started_checks(
 
 def _build_breakdown_of_hours_checks(
     pay_period: int, timesheet_link: str, input_dir: Path
-) -> tuple[list[Check], Path]:
+) -> tuple[list[Check], HoursBreakdown]:
     """Build all 7 `HoursBreakdown` checks.
 
-    Also returns the source hours file, since `run()` reuses it afterward
-    for the union-meal report.
+    Also returns the `HoursBreakdown` instance itself, since `run()` reuses
+    its already-parsed `raw_hours_df` afterward for the union-meal report
+    (instead of `Reporter` re-reading the same "ts_break_down" file).
     """
     hours_file = find_latest_file("ts_break_down", input_dir)
     hours_breakdown = HoursBreakdown(
@@ -266,7 +267,7 @@ def _build_breakdown_of_hours_checks(
             render(UNION_WEEKEND_OT_TEMPLATE, timesheet_link=timesheet_link),
         ),
     ]
-    return checks, hours_file
+    return checks, hours_breakdown
 
 
 def run_check(

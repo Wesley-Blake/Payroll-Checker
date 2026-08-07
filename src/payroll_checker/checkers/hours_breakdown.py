@@ -32,9 +32,14 @@ class HoursBreakdown(BaseChecker):
         `file_hours` is the timesheet breakdown-by-earn-code export; `file_email`
         is the active-employee export used only for its EmplID -> PacificEmail
         mapping (not pay-period filtered, since it's a lookup table).
+
+        Keeps the full, unsubsetted read as `self.raw_hours_df` so
+        `runner.py` can hand it to `Reporter` afterward instead of that
+        class re-parsing the same file.
         """
         email_df = self.build_dataframe(file_email, self.EMAIL_HEADERS, pay_period=None)
-        self.hours_df = self.build_dataframe(file_hours, self.HOURS_HEADERS, pay_period)
+        self.raw_hours_df = self.read_csv(file_hours, pay_period)
+        self.hours_df = self.raw_hours_df[self.HOURS_HEADERS].drop_duplicates()
         self.hours_df = pd.merge(
             self.hours_df,
             email_df,

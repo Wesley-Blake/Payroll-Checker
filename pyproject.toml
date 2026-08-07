@@ -18,6 +18,12 @@ dev = [
     "pytest-cov>=7.1.0",
     "ruff==0.15.22",
 ]
+# Packaging the GUI into a standalone .exe -- see payroll_checker_gui.spec
+# and the "Building a standalone .exe" section in README.md. Kept separate
+# from `dev` since a normal dev/test install doesn't need PyInstaller.
+build = [
+    "pyinstaller",
+]
 
 [project.scripts]
 payroll-checker = "payroll_checker.main:main"
