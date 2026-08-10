@@ -1,12 +1,10 @@
-# Guidelines For Refactor.
-## To Be Implemented.
-### Code Guide.
+# Code Guide.
 1. There are 4 reports the will display information.
     1. status of the timesheet
     2. overlapping hours
     3. not started
     4. breakdown of hours
-2. There should be a parrent class.
+2. There should be a parent class.
     1. method to find the csv report in downloads
     2. method to make the dataframe
         1. input should be a list of headers to keep, drop the rest
@@ -15,6 +13,12 @@
     * attribute is a dataframe of that csv
     * Each method should check for 1 specific type of error and return a list of emails (unique)
 4. Function to determine current pay period.
+5. Use UV only.
+6. ruff is our style guide
+7. when changing the gui, consider if it should be placed in settings vs on the main window.
+8. Use asserts to verify state. Inputs, outputs, something is a way that we expected.
+9. Use if __debug__: for print statments to confirm something is happening.
+10. in pyproject.toml, run and build with python -OO to remove asserts and __debug__.
 
 ### Pay Schedule
 1. Payroll reports every 2 weeks.

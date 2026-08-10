@@ -18,4 +18,4 @@ class QueueLogHandler(logging.Handler):
         self.message_queue = message_queue
 
     def emit(self, record: logging.LogRecord) -> None:
-        self.message_queue.put(("log", self.format(record)))
+        self.message_queue.put(("log", self.format(record), record.levelname))

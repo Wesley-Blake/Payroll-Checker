@@ -9,7 +9,7 @@ works. `app.py` is what wires these widgets to real behavior.
 
 import tkinter as tk
 from dataclasses import dataclass
-from tkinter import filedialog, scrolledtext, ttk
+from tkinter import filedialog, ttk
 from typing import Callable
 
 
@@ -87,6 +87,41 @@ def build_report_checkboxes(parent: tk.Widget, reports: list[tuple[str, str]]) -
 
 
 @dataclass
+class PayPeriodOverride:
+    frame: ttk.Frame
+    override_var: tk.StringVar
+
+
+# Shown when no manual override is selected -- runner.run() then falls back
+# to auto-detecting the pay period from today's date and `.env`'s
+# `first_sunday`, same as the CLI's default (no `--pay-period` passed).
+AUTO_PAY_PERIOD = "Auto (from date)"
+
+# Payroll runs every 2 weeks, 26 periods/year (see .claude/CLAUDE.md).
+_PAY_PERIOD_COUNT = 26
+
+
+def build_pay_period_override(parent: tk.Widget) -> PayPeriodOverride:
+    """A labeled dropdown to manually pick a pay period instead of the
+    auto-detected one -- e.g. to re-run/check a past or upcoming period.
+    """
+    frame = ttk.Frame(parent)
+    ttk.Label(frame, text="Pay Period:").pack(side="left")
+    override_var = tk.StringVar(value=AUTO_PAY_PERIOD)
+    values = [AUTO_PAY_PERIOD] + [str(n) for n in range(1, _PAY_PERIOD_COUNT + 1)]
+    ttk.Combobox(
+        frame, textvariable=override_var, values=values, state="readonly", width=14
+    ).pack(side="left", padx=(6, 0))
+    return PayPeriodOverride(frame=frame, override_var=override_var)
+
+
+def get_pay_period_override(controls: PayPeriodOverride) -> int | None:
+    """The manually-selected pay period, or `None` for auto-detect."""
+    value = controls.override_var.get()
+    return None if value == AUTO_PAY_PERIOD else int(value)
+
+
+@dataclass
 class DirectoryPicker:
     frame: ttk.Frame
     path_var: tk.StringVar
@@ -126,7 +161,10 @@ def build_run_controls(
     ttk.Checkbutton(
         frame, text="Dry run (open drafts, don't send)", variable=dry_run_var
     ).pack(side="left")
-    run_button = ttk.Button(frame, text="Run", command=on_run)
+    # "Accent.TButton" is a style sv_ttk ships out of the box -- makes Run
+    # read as the primary action without any hand-rolled ttk.Style colors
+    # that would need to be kept in sync with the theme separately.
+    run_button = ttk.Button(frame, text="▶ Run", command=on_run, style="Accent.TButton")
     run_button.pack(side="left", padx=(12, 0))
     progress_bar = ttk.Progressbar(frame, mode="determinate", maximum=1, value=0, length=150)
     progress_bar.pack(side="left", padx=(12, 0), fill="x", expand=True)
@@ -146,27 +184,82 @@ def step_progress(controls: RunControls) -> None:
     controls.progress_bar["value"] += 1
 
 
-def build_log_pane(parent: tk.Widget) -> scrolledtext.ScrolledText:
-    """A read-only, auto-scrolling text area for run progress and log output."""
-    return scrolledtext.ScrolledText(parent, height=16, state="disabled", wrap="word")
+@dataclass
+class LogPane:
+    frame: ttk.Frame
+    text: tk.Text
 
 
-def append_log_line(text: scrolledtext.ScrolledText, line: str) -> None:
-    """Append `line` to `text` and scroll to the bottom."""
+# Tag names `append_log_line` applies for these levels; colors are filled in
+# by `set_log_theme` since sv_ttk can't reach a plain `tk.Text`'s colors.
+_WARNING_LEVELS = {"WARNING"}
+_ERROR_LEVELS = {"ERROR", "CRITICAL"}
+
+
+def build_log_pane(parent: tk.Widget) -> LogPane:
+    """A read-only, auto-scrolling text area for run progress and log output.
+
+    Composed from a plain `tk.Text` + `ttk.Scrollbar` rather than
+    `tkinter.scrolledtext.ScrolledText` -- that convenience class wires up a
+    classic `tk.Scrollbar` internally, which sv_ttk can't restyle, and this
+    pane is the single largest, most visible element in the window.
+    """
+    frame = ttk.Frame(parent)
+    frame.columnconfigure(0, weight=1)
+    frame.rowconfigure(0, weight=1)
+
+    text = tk.Text(
+        frame, height=16, state="disabled", wrap="word", borderwidth=0, highlightthickness=0
+    )
+    scrollbar = ttk.Scrollbar(frame, orient="vertical", command=text.yview)
+    text.configure(yscrollcommand=scrollbar.set)
+    text.grid(row=0, column=0, sticky="nsew")
+    scrollbar.grid(row=0, column=1, sticky="ns")
+
+    return LogPane(frame=frame, text=text)
+
+
+def set_log_theme(log_pane: LogPane, palette) -> None:
+    """Recolor the log pane for the current theme's `palette`.
+
+    `palette` is a `theme.Palette`, but left untyped here -- `widgets.py`
+    is deliberately kept free of any import of `theme` (or `runner`,
+    `outlook`, `config`), same boundary as the rest of this module.
+    """
+    log_pane.text.configure(
+        bg=palette.log_bg, fg=palette.log_fg, insertbackground=palette.log_fg
+    )
+    log_pane.text.tag_configure("warning", foreground=palette.warning_fg)
+    log_pane.text.tag_configure("error", foreground=palette.error_fg)
+
+
+def append_log_line(log_pane: LogPane, line: str, level: str | None = None) -> None:
+    """Append `line` to the log pane and scroll to the bottom.
+
+    `level` (a `logging` level name) colors the line if it's a warning or
+    error; anything else (including progress/done lines, which aren't real
+    log levels) renders in the pane's plain text color.
+    """
+    tag = "warning" if level in _WARNING_LEVELS else "error" if level in _ERROR_LEVELS else None
+    text = log_pane.text
     text.configure(state="normal")
-    text.insert("end", line + "\n")
+    if tag:
+        text.insert("end", line + "\n", tag)
+    else:
+        text.insert("end", line + "\n")
     text.configure(state="disabled")
     text.see("end")
 
 
-def append_log_separator(text: scrolledtext.ScrolledText) -> None:
+def append_log_separator(log_pane: LogPane) -> None:
     """Append a blank line and a dashed divider, to mark the boundary after a
     check's result line."""
-    append_log_line(text, "\n" + "-" * 60)
+    append_log_line(log_pane, "\n" + "-" * 60)
 
 
-def clear_log(text: scrolledtext.ScrolledText) -> None:
+def clear_log(log_pane: LogPane) -> None:
     """Wipe all text from the log pane (used at the start of each run)."""
+    text = log_pane.text
     text.configure(state="normal")
     text.delete("1.0", "end")
     text.configure(state="disabled")

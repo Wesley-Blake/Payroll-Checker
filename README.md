@@ -78,26 +78,32 @@ payroll-checker --dry-run
 
 ### GUI
 
-A desktop GUI (tkinter, no extra dependencies) is available for interactive,
-ad-hoc runs — pick which of the 4 reports to run, see whether Outlook is
-reachable, choose different input/output folders than `Downloads` (via a
-Settings dialog), and watch progress as it runs. It calls the same
-`runner.run()` the CLI does, so behavior for a given report/pay-period is
-identical either way.
+A desktop GUI (tkinter, dark-themed with [sv-ttk](https://github.com/rdbende/Sun-Valley-ttk-theme))
+is available for interactive, ad-hoc runs — pick which of the 4 reports to
+run, see whether Outlook is reachable, manually override the pay period
+instead of auto-detecting it from today's date, choose different
+input/output folders than `Downloads` (via a Settings dialog), and watch
+progress as it runs. It calls the same `runner.run()` the CLI does, so
+behavior for a given report/pay-period is identical either way.
+
+Requires the `gui` extra (`pip install -e .[gui]`, or `uv sync --extra gui`):
 
 ```sh
-python -m payroll_checker.gui
+uv sync --extra gui
+uv run python -m payroll_checker.gui
 # or, once installed:
 payroll-checker-gui
 ```
 
 Dry-run always starts checked on launch (opens Outlook drafts for review
 instead of sending), regardless of what was left checked last session, and
-unchecking it asks for confirmation before a real send. Folder choices and
-selected reports, but not the dry-run toggle, are remembered between
-launches in a `gui_settings.json` file next to `.env` — separate from it,
-since `.env` is hand-edited program config and `gui_settings.json` is
-GUI-only state the app writes itself.
+unchecking it asks for confirmation before a real send. The pay-period
+override likewise always starts back on auto-detect each launch, rather than
+silently reusing a manual override from a previous session. Folder choices
+and selected reports, but not the dry-run toggle or the pay-period override,
+are remembered between launches in a `gui_settings.json` file next to `.env` —
+separate from it, since `.env` is hand-edited program config and
+`gui_settings.json` is GUI-only state the app writes itself.
 
 ### Building a standalone .exe
 
@@ -105,11 +111,11 @@ A double-clickable single-file `.exe` can be built with
 [PyInstaller](https://pyinstaller.org/) via `payroll_checker_gui.spec`:
 
 ```sh
-uv sync --extra build
+uv sync --extra build --extra gui
 uv run pyinstaller payroll_checker_gui.spec
 ```
 
-(or, without uv: `pip install -e .[build]` then `pyinstaller payroll_checker_gui.spec`)
+(or, without uv: `pip install -e .[build,gui]` then `pyinstaller payroll_checker_gui.spec`)
 
 The result is `dist/PayrollChecker.exe`. Two things to know before running it:
 
@@ -148,6 +154,7 @@ src/payroll_checker/
   gui/                                   # tkinter desktop GUI (see "GUI" above)
     app.py                                # composition root: window, worker thread, wiring
     widgets.py                             # tkinter layout only, no orchestration knowledge
+    theme.py                                # dark palette + sv_ttk/title-bar theming
     worker.py                               # runs runner.run() on a background thread
     settings.py                              # gui_settings.json load/save
     log_handler.py                            # forwards log records into the GUI's log pane

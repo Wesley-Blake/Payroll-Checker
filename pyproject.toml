@@ -24,6 +24,14 @@ dev = [
 build = [
     "pyinstaller",
 ]
+# The GUI's dark theming (Windows 11-style ttk look). Kept separate
+# from `dependencies` so the CLI stays installable without pulling in GUI
+# libraries. pywinstyles darkens the native window title bar to match --
+# it's ctypes-based (Windows-only) and a no-op if it fails to load.
+gui = [
+    "sv-ttk",
+    "pywinstyles; platform_system == 'Windows'",
+]
 
 [project.scripts]
 payroll-checker = "payroll_checker.main:main"

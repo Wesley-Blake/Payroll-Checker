@@ -13,7 +13,7 @@ from pathlib import Path
 from tkinter import messagebox, ttk
 
 from payroll_checker.downloads import DOWNLOADS_DIR
-from payroll_checker.gui import widgets
+from payroll_checker.gui import theme, widgets
 from payroll_checker.gui.log_handler import QueueLogHandler
 from payroll_checker.gui.settings import GuiSettings, load_settings, save_settings
 from payroll_checker.gui.worker import check_outlook_status_in_background, run_in_background
@@ -56,15 +56,24 @@ class App(tk.Tk):
         self.run_thread = None
         self._last_connection: tuple[str, str] | None = None
 
+        # Must happen after the root window exists (super().__init__() above)
+        # but before _build_widgets(), so widgets are colored correctly on
+        # first paint instead of being built plain and then re-colored.
+        self.palette = theme.apply_theme(self)
+
         self._build_widgets()
+        self._repaint_non_ttk_widgets()
         self._attach_log_handler()
         self._poll_connection()
         self._drain_queue()
 
     def _build_widgets(self) -> None:
-        """Lay out two columns: settings/reports on the left, the Outlook
-        indicator/run controls/log pane on the right (indicator top-right,
-        run controls directly under it, log pane filling the rest).
+        """Lay out two columns: settings/pay-period override/reports on the
+        left, the Outlook indicator/run controls/log pane on the right
+        (indicator top-right, run controls directly under it, log pane
+        filling the rest). The native window title bar (see `self.title(...)`
+        above) already identifies the app, so there's no in-window title
+        label duplicating it.
         """
         pad = {"padx": 10, "pady": 6}
 
@@ -80,11 +89,18 @@ class App(tk.Tk):
         right.columnconfigure(0, weight=1)
         right.rowconfigure(2, weight=1)  # log pane row grows with the window
 
-        # -- Left column: settings, and which reports to run --------------
+        # -- Left column: settings, pay-period override, and which reports
+        # -- to run ----------------------------------------------------------
 
-        ttk.Button(left, text="Settings...", command=self._open_settings_dialog).pack(
+        ttk.Button(left, text="⚙ Settings...", command=self._open_settings_dialog).pack(
             anchor="w", **pad
         )
+
+        # Not persisted, same reasoning as the dry-run toggle -- always
+        # starts back on auto-detect rather than silently reusing a manual
+        # override from a previous session.
+        self.pay_period_override = widgets.build_pay_period_override(left)
+        self.pay_period_override.frame.pack(anchor="w", fill="x", **pad)
 
         reports = [(key, REPORT_LABELS[key]) for key in REPORT_NAMES]
         self.report_checkboxes = widgets.build_report_checkboxes(left, reports)
@@ -99,13 +115,15 @@ class App(tk.Tk):
 
         # Dry run always starts checked, regardless of what was left
         # checked last session -- not read from `self.settings`.
+        run_frame = ttk.LabelFrame(right, text="Run")
+        run_frame.grid(row=1, column=0, sticky="ew", **pad)
         self.run_controls = widgets.build_run_controls(
-            right, True, on_run=self._on_run_clicked
+            run_frame, True, on_run=self._on_run_clicked
         )
-        self.run_controls.frame.grid(row=1, column=0, sticky="ew", **pad)
+        self.run_controls.frame.pack(fill="x", padx=8, pady=8)
 
         self.log_pane = widgets.build_log_pane(right)
-        self.log_pane.grid(row=2, column=0, sticky="nsew", padx=10, pady=(0, 10))
+        self.log_pane.frame.grid(row=2, column=0, sticky="nsew", padx=10, pady=(0, 10))
 
     def _attach_log_handler(self) -> None:
         """Route the payroll_checker logger into the log pane, in addition
@@ -114,6 +132,20 @@ class App(tk.Tk):
         configure_logging()
         handler = QueueLogHandler(self.message_queue)
         logging.getLogger("payroll_checker").addHandler(handler)
+
+    # -- Theme -------------------------------------------------------------
+
+    def _repaint_non_ttk_widgets(self) -> None:
+        """Push `self.palette` into the widgets sv_ttk can't reach on its
+        own: the root window's own background (sv_ttk only restyles ttk
+        widgets, not the plain `tk.Tk` window itself -- same reason the
+        Settings dialog needs its own manual nudge, see
+        `_open_settings_dialog`), the connection dot's canvas background,
+        and the log pane.
+        """
+        self.configure(bg=self.palette.bg)
+        self.connection.canvas.configure(bg=self.palette.bg)
+        widgets.set_log_theme(self.log_pane, self.palette)
 
     # -- Settings dialog ---------------------------------------------------
 
@@ -128,6 +160,10 @@ class App(tk.Tk):
         dialog.title("Settings")
         dialog.transient(self)
         dialog.resizable(False, False)
+        # ttk widgets inside pick up the current sv_ttk theme automatically
+        # (it's applied interpreter-wide); only the plain Toplevel's own
+        # background needs a manual nudge to match.
+        dialog.configure(bg=self.palette.bg)
         pad = {"padx": 10, "pady": 6}
 
         input_picker = widgets.build_directory_picker(
@@ -210,6 +246,7 @@ class App(tk.Tk):
             input_dir=Path(self.settings.input_dir or DOWNLOADS_DIR),
             output_dir=Path(self.settings.output_dir or DOWNLOADS_DIR),
             dry_run=dry_run,
+            pay_period=widgets.get_pay_period_override(self.pay_period_override),
         )
 
     def _persist_settings(
@@ -257,14 +294,14 @@ class App(tk.Tk):
                 widgets.step_progress(self.run_controls)
             widgets.append_log_line(self.log_pane, f"{name}: {message}")
         elif kind == "log":
-            _, line = item
-            widgets.append_log_line(self.log_pane, line)
+            _, line, level = item
+            widgets.append_log_line(self.log_pane, line, level=level)
         elif kind == "done":
             widgets.append_log_line(self.log_pane, "Run finished.")
             self._run_finished()
         elif kind == "error":
             _, exc = item
-            widgets.append_log_line(self.log_pane, f"Run failed: {exc}")
+            widgets.append_log_line(self.log_pane, f"Run failed: {exc}", level="ERROR")
             self._run_finished()
         elif kind == "outlook_status":
             _, connected, email = item
