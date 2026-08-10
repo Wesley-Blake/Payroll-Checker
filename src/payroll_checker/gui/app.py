@@ -6,19 +6,23 @@ This is the one module that imports both `widgets` (dumb layout) and
 in `gui/` is decomposed so it can be read on its own.
 """
 
+import dataclasses
 import logging
 import queue
 import tkinter as tk
 from pathlib import Path
 from tkinter import messagebox, ttk
 
-from payroll_checker.downloads import DOWNLOADS_DIR
 from payroll_checker.gui import theme, widgets
 from payroll_checker.gui.log_handler import QueueLogHandler
-from payroll_checker.gui.settings import GuiSettings, load_settings, save_settings
-from payroll_checker.gui.worker import check_outlook_status_in_background, run_in_background
-from payroll_checker.logging_setup import configure_logging
-from payroll_checker.runner import REPORT_NAMES
+from payroll_checker.logic.settings import load_settings, save_settings
+from payroll_checker.gui.worker import (
+    check_outlook_status_in_background,
+    run_in_background,
+)
+from payroll_checker.logic.downloads import DOWNLOADS_DIR
+from payroll_checker.logic.logging_setup import configure_logging
+from payroll_checker.logic.reports import REPORT_NAMES
 
 logger = logging.getLogger(__name__)
 
@@ -55,14 +59,19 @@ class App(tk.Tk):
         self.settings = load_settings()
         self.run_thread = None
         self._last_connection: tuple[str, str] | None = None
+        self._settings_dialog: tk.Toplevel | None = None
 
         # Must happen after the root window exists (super().__init__() above)
         # but before _build_widgets(), so widgets are colored correctly on
-        # first paint instead of being built plain and then re-colored.
+        # first paint instead of being built plain and then re-colored. The
+        # root's own background is set here too (sv_ttk only restyles ttk
+        # widgets, not the plain tk.Tk window itself) -- same reason the
+        # Settings dialog needs its own manual nudge, see
+        # _open_settings_dialog.
         self.palette = theme.apply_theme(self)
+        self.configure(bg=self.palette.bg)
 
         self._build_widgets()
-        self._repaint_non_ttk_widgets()
         self._attach_log_handler()
         self._poll_connection()
         self._drain_queue()
@@ -110,7 +119,7 @@ class App(tk.Tk):
 
         # -- Right column: connection status, run controls, log pane ------
 
-        self.connection = widgets.build_connection_indicator(right)
+        self.connection = widgets.build_connection_indicator(right, self.palette)
         self.connection.frame.grid(row=0, column=0, sticky="ne", **pad)
 
         # Dry run always starts checked, regardless of what was left
@@ -122,7 +131,7 @@ class App(tk.Tk):
         )
         self.run_controls.frame.pack(fill="x", padx=8, pady=8)
 
-        self.log_pane = widgets.build_log_pane(right)
+        self.log_pane = widgets.build_log_pane(right, self.palette)
         self.log_pane.frame.grid(row=2, column=0, sticky="nsew", padx=10, pady=(0, 10))
 
     def _attach_log_handler(self) -> None:
@@ -133,37 +142,39 @@ class App(tk.Tk):
         handler = QueueLogHandler(self.message_queue)
         logging.getLogger("payroll_checker").addHandler(handler)
 
-    # -- Theme -------------------------------------------------------------
-
-    def _repaint_non_ttk_widgets(self) -> None:
-        """Push `self.palette` into the widgets sv_ttk can't reach on its
-        own: the root window's own background (sv_ttk only restyles ttk
-        widgets, not the plain `tk.Tk` window itself -- same reason the
-        Settings dialog needs its own manual nudge, see
-        `_open_settings_dialog`), the connection dot's canvas background,
-        and the log pane.
-        """
-        self.configure(bg=self.palette.bg)
-        self.connection.canvas.configure(bg=self.palette.bg)
-        widgets.set_log_theme(self.log_pane, self.palette)
-
     # -- Settings dialog ---------------------------------------------------
 
     def _open_settings_dialog(self) -> None:
-        """Input/output folders, in a modal dialog off the main window.
+        """Folders and program config, in a modal dialog off the main window.
         `self.settings` (not these widgets) is the persistent source of
         truth, so the dialog can be freely rebuilt from scratch each time
         it's opened -- each field just seeds from whatever's currently in
         `self.settings`.
+
+        Only one dialog is ever live at a time: re-clicking "Settings..."
+        while one is already open just refocuses it instead of stacking a
+        second `Toplevel`, since `wait_visibility()` below pumps the Tk
+        event loop and would otherwise let a repeat click reenter this
+        method while the first call is still on the stack.
         """
+        if self._settings_dialog is not None and self._settings_dialog.winfo_exists():
+            self._settings_dialog.lift()
+            self._settings_dialog.focus_set()
+            return
+
         dialog = tk.Toplevel(self)
+        self._settings_dialog = dialog
         dialog.title("Settings")
         dialog.transient(self)
         dialog.resizable(False, False)
         # ttk widgets inside pick up the current sv_ttk theme automatically
         # (it's applied interpreter-wide); only the plain Toplevel's own
-        # background needs a manual nudge to match.
+        # background needs a manual nudge to match. The native title bar is
+        # a separate HWND from the root's, so it needs its own theming call
+        # too -- otherwise it shows the OS-default (light) title bar above
+        # a dark dialog body.
         dialog.configure(bg=self.palette.bg)
+        theme.apply_titlebar_theme(dialog)
         pad = {"padx": 10, "pady": 6}
 
         input_picker = widgets.build_directory_picker(
@@ -175,6 +186,35 @@ class App(tk.Tk):
         )
         output_picker.frame.pack(fill="x", **pad)
 
+        # Program config (formerly hand-edited in `.env`) -- all blank on a
+        # fresh install and filled in here.
+        guide_picker = widgets.build_file_picker(
+            dialog, "Hours guide:", self.settings.hours_guide
+        )
+        guide_picker.frame.pack(fill="x", **pad)
+        website_field = widgets.build_text_field(
+            dialog, "Timesheet URL:", self.settings.website
+        )
+        website_field.frame.pack(fill="x", **pad)
+        first_sunday_field = widgets.build_text_field(
+            dialog, "First Sunday:", self.settings.first_sunday
+        )
+        first_sunday_field.frame.pack(fill="x", **pad)
+        holidays_field = widgets.build_text_field(
+            dialog, "Holidays:", ", ".join(self.settings.holidays)
+        )
+        holidays_field.frame.pack(fill="x", **pad)
+        seasonal_field = widgets.build_text_field(
+            dialog, "Seasonal days:", self.settings.seasonal_days
+        )
+        seasonal_field.frame.pack(fill="x", **pad)
+        ttk.Label(
+            dialog,
+            text="First Sunday: last Sunday of the previous pay year (YYYY-MM-DD)."
+            " Holidays: comma-separated dates.",
+            wraplength=460,
+        ).pack(anchor="w", padx=10, pady=(0, 6))
+
         # Persist each field immediately on change, same as the rest of
         # the app -- no separate Save button needed.
         input_picker.path_var.trace_add(
@@ -185,13 +225,53 @@ class App(tk.Tk):
             "write",
             lambda *_a: self._persist_settings(output_dir=output_picker.path_var.get()),
         )
+        guide_picker.path_var.trace_add(
+            "write",
+            lambda *_a: self._persist_settings(hours_guide=guide_picker.path_var.get()),
+        )
+        website_field.value_var.trace_add(
+            "write",
+            lambda *_a: self._persist_settings(website=website_field.value_var.get()),
+        )
+        first_sunday_field.value_var.trace_add(
+            "write",
+            lambda *_a: self._persist_settings(
+                first_sunday=first_sunday_field.value_var.get()
+            ),
+        )
+        holidays_field.value_var.trace_add(
+            "write",
+            lambda *_a: self._persist_settings(holidays=holidays_field.value_var.get()),
+        )
+        seasonal_field.value_var.trace_add(
+            "write",
+            lambda *_a: self._persist_settings(
+                seasonal_days=seasonal_field.value_var.get()
+            ),
+        )
 
-        ttk.Button(dialog, text="Close", command=dialog.destroy).pack(pady=(0, 10))
+        ttk.Button(dialog, text="Close", command=self._close_settings_dialog).pack(
+            pady=(0, 10)
+        )
+        dialog.protocol("WM_DELETE_WINDOW", self._close_settings_dialog)
 
         # Grab focus only after the dialog is actually mapped, otherwise
-        # grab_set() can raise on some window managers.
-        dialog.wait_visibility()
-        dialog.grab_set()
+        # grab_set() can raise on some window managers. A dialog closed
+        # before it finishes mapping (e.g. a fast Close click, or another
+        # dialog destroyed while this call was reentered via the event
+        # pumping wait_visibility() does) makes both calls raise TclError --
+        # harmless once the dialog is already gone, so it's swallowed here
+        # rather than surfacing as an unhandled Tkinter callback exception.
+        try:
+            dialog.wait_visibility()
+            dialog.grab_set()
+        except tk.TclError:
+            pass
+
+    def _close_settings_dialog(self) -> None:
+        dialog, self._settings_dialog = self._settings_dialog, None
+        if dialog is not None and dialog.winfo_exists():
+            dialog.destroy()
 
     # -- Outlook connection indicator ------------------------------------
 
@@ -205,7 +285,9 @@ class App(tk.Tk):
         # do, `_handle_message` decides whether the screen needs to change at
         # all, so repeated polls with an unchanged result don't flicker.
         if self._last_connection is None:
-            widgets.set_connection_status(self.connection, "checking", "Checking Outlook...")
+            widgets.set_connection_status(
+                self.connection, self.palette, "checking", "Checking Outlook..."
+            )
         check_outlook_status_in_background(self.message_queue)
         self.after(CONNECTION_POLL_MS, self._poll_connection)
 
@@ -222,7 +304,9 @@ class App(tk.Tk):
 
         selected = self._selected_reports()
         if not selected:
-            messagebox.showwarning("Nothing selected", "Select at least one report to run.")
+            messagebox.showwarning(
+                "Nothing selected", "Select at least one report to run."
+            )
             return
 
         dry_run = self.run_controls.dry_run_var.get()
@@ -237,7 +321,9 @@ class App(tk.Tk):
 
         self.run_controls.run_button.state(["disabled"])
         widgets.clear_log(self.log_pane)
-        widgets.start_progress(self.run_controls, sum(CHECK_COUNTS[key] for key in selected))
+        widgets.start_progress(
+            self.run_controls, sum(CHECK_COUNTS[key] for key in selected)
+        )
         widgets.append_log_line(self.log_pane, f"Starting run: {', '.join(selected)}")
 
         self.run_thread = run_in_background(
@@ -254,6 +340,11 @@ class App(tk.Tk):
         *,
         input_dir: str | None = None,
         output_dir: str | None = None,
+        hours_guide: str | None = None,
+        website: str | None = None,
+        first_sunday: str | None = None,
+        holidays: str | None = None,
+        seasonal_days: str | None = None,
     ) -> None:
         """Update `self.settings` and save it. Any field not passed keeps
         its current `self.settings` value -- callers only pass the field
@@ -261,12 +352,26 @@ class App(tk.Tk):
         `selected_reports`, which is always refreshed live from the
         checkboxes since those stay on the main window for the whole
         session.
+
+        `holidays` arrives as the dialog's raw comma-separated string and
+        is stored as a list of date strings.
         """
-        self.settings = GuiSettings(
-            input_dir=input_dir if input_dir is not None else self.settings.input_dir,
-            output_dir=output_dir if output_dir is not None else self.settings.output_dir,
-            selected_reports=list(self._selected_reports()),
-        )
+        changes = {
+            key: value
+            for key, value in {
+                "input_dir": input_dir,
+                "output_dir": output_dir,
+                "hours_guide": hours_guide,
+                "website": website,
+                "first_sunday": first_sunday,
+                "seasonal_days": seasonal_days,
+            }.items()
+            if value is not None
+        }
+        if holidays is not None:
+            changes["holidays"] = [h.strip() for h in holidays.split(",") if h.strip()]
+        changes["selected_reports"] = list(self._selected_reports())
+        self.settings = dataclasses.replace(self.settings, **changes)
         save_settings(self.settings)
 
     def _run_finished(self) -> None:
@@ -306,11 +411,16 @@ class App(tk.Tk):
         elif kind == "outlook_status":
             _, connected, email = item
             if connected:
-                state, text = "connected", f"Connected ({email})" if email else "Connected"
+                state, text = (
+                    "connected",
+                    f"Connected ({email})" if email else "Connected",
+                )
             else:
                 state, text = "disconnected", "Disconnected"
             if (state, text) != self._last_connection:
-                widgets.set_connection_status(self.connection, state, text)
+                widgets.set_connection_status(
+                    self.connection, self.palette, state, text
+                )
                 self._last_connection = (state, text)
 
 

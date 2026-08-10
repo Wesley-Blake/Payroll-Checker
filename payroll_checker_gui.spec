@@ -3,7 +3,7 @@
 
 Build with:
     uv sync --extra build --extra gui
-    uv run pyinstaller payroll_checker_gui.spec
+    uv run python -OO -m PyInstaller payroll_checker_gui.spec
 
 Produces dist/PayrollChecker.exe -- a single-file executable (binaries/data
 go straight into EXE() below, with no separate COLLECT() step). See the
@@ -16,13 +16,7 @@ from PyInstaller.utils.hooks import collect_data_files
 a = Analysis(
     ["src/payroll_checker/gui/__main__.py"],
     pathex=["src"],
-    # win32timezone is imported dynamically by pywin32/pythoncom (used in
-    # outlook.py for Outlook COM automation) -- PyInstaller's pywin32 hook
-    # doesn't always pick it up on its own.
     hiddenimports=["win32timezone"],
-    # sv_ttk ships its light/dark theme as Tcl/PNG package data, not code --
-    # without collecting it explicitly the frozen .exe launches but can't
-    # find its theme assets.
     datas=collect_data_files("sv_ttk"),
 )
 pyz = PYZ(a.pure)
@@ -34,5 +28,5 @@ exe = EXE(
     a.datas,
     [],
     name="PayrollChecker",
-    console=False,  # windowed: no console window behind the tkinter GUI
+    console=False,
 )

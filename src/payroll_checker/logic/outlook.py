@@ -2,15 +2,14 @@
 everything else can be imported and tested on a machine without Outlook.
 """
 
-import configparser
 import logging
 from pathlib import Path
 
 import pythoncom
 import win32com.client as win32
 
-from payroll_checker.config import dotenv_path
-from payroll_checker.validation import make_list
+from payroll_checker.logic.settings import load_settings
+from payroll_checker.logic.validation import make_list
 
 logger = logging.getLogger(__name__)
 
@@ -19,8 +18,8 @@ def get_outlook_status() -> tuple[bool, str | None]:
     """Return `(connected, current_user_email)` for the local Outlook install.
 
     Does its own COM dispatch, independent of any `WinEmail` instance, so a
-    caller (e.g. a GUI) can poll this repeatedly without requiring a valid
-    `.env` or holding a mail-drafting session open. Never raises: any
+    caller (e.g. a GUI) can poll this repeatedly without requiring any
+    saved settings or holding a mail-drafting session open. Never raises: any
     failure (Outlook not installed, not running, no profile configured) is
     reported as `(False, None)`.
 
@@ -60,21 +59,20 @@ class WinEmail:
     """Send payroll notice emails through the local Outlook installation."""
 
     def __init__(self):
-        """Connect to Outlook via COM and load the hours-guide attachment path from `.env`."""
+        """Connect to Outlook via COM and load the hours-guide attachment path
+        from the settings file. A blank/unset `hours_guide` is fine -- emails
+        just go out without the attachment (see the `.is_file()` guard in
+        `send_email`).
+        """
         try:
             self.outlook = win32.Dispatch("outlook.application")
         except Exception as e:
             msg = f"Error initializing Outlook: {e}"
             logger.error(msg)
             raise RuntimeError(msg) from e
-        config = configparser.ConfigParser()
-        config.read(dotenv_path())
-        if config.has_section("Payroll-Checker"):
-            self.attachment = Path(config["Payroll-Checker"]["hours_guide"])
-        else:
-            msg = "Invalid .env file format."
-            logger.error(msg)
-            raise ValueError(msg)
+        # Path("") would be Path(".") anyway, and Path(".").is_file() is
+        # False, so a blank setting safely means "no attachment".
+        self.attachment = Path(load_settings().hours_guide.strip() or ".")
 
     def send_email(
         self,

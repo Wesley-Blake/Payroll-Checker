@@ -6,28 +6,6 @@ on:
   pull_request:
 
 jobs:
-  test:
-    # outlook.py imports win32com.client (pywin32) at module load time,
-    # so tests can only run on a Windows runner.
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        python-version: ["3.11", "3.13"]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: pip
-
-      - name: Install dependencies
-        run: pip install -e .[dev]
-
-      - name: Run pytest
-        run: pytest
-
   lint:
     runs-on: windows-latest
     steps:

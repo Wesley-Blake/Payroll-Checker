@@ -5,12 +5,10 @@ from pathlib import Path
 
 from pandas import DataFrame
 
-from payroll_checker.checkers.base import BaseChecker
-
 logger = logging.getLogger(__name__)
 
 
-class Reporter(BaseChecker):
+class Reporter:
     """Generate payroll reports from an already-loaded timesheet dataframe."""
 
     def __init__(self, df: DataFrame, output_dir: Path) -> None:

@@ -6,9 +6,9 @@ from pathlib import Path
 import pandas as pd
 from pandas import DataFrame
 
-from payroll_checker.checkers.base import BaseChecker
-from payroll_checker.downloads import save_df_to_downloads
-from payroll_checker.validation import make_list
+from payroll_checker.logic.checkers.base import BaseChecker
+from payroll_checker.logic.downloads import save_df_to_downloads
+from payroll_checker.logic.validation import make_list
 
 logger = logging.getLogger(__name__)
 
@@ -187,7 +187,7 @@ class HoursBreakdown(BaseChecker):
         """Return emails for holiday-eligible employees missing HOL/HLW pay.
 
         `hol_list` is the list of ISO holiday dates for the pay period
-        (loaded from `.env` via `load_holidays`).
+        (loaded from the settings file via `load_holidays`).
         """
         if not hol_list:
             return []

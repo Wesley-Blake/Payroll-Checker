@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 from pandas import DataFrame
 
-from payroll_checker.downloads import find_latest_file
+from payroll_checker.logic.downloads import find_latest_file
 
 logger = logging.getLogger(__name__)
 

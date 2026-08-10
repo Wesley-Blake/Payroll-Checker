@@ -1,4 +1,4 @@
-"""Enables `python -m payroll_checker`."""
+"""Enables `python -m payroll_checker.cli`."""
 
 from payroll_checker.cli.main import main
 

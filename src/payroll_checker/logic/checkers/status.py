@@ -10,10 +10,10 @@ matplotlib.use("Agg")  # headless: this module only ever saves PNGs (never
 # plt.show()s), and the GUI app renders these charts from a background worker
 # thread (gui/worker.py) -- an interactive backend there warns/can fail.
 
-import matplotlib.pyplot as plt  # noqa: E402 -- must come after matplotlib.use()
+import matplotlib.pyplot as plt
 
-from payroll_checker.checkers.base import BaseChecker
-from payroll_checker.validation import make_list
+from payroll_checker.logic.checkers.base import BaseChecker
+from payroll_checker.logic.validation import make_list
 
 logger = logging.getLogger(__name__)
 

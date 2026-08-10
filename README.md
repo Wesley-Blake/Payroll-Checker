@@ -42,32 +42,50 @@ uv sync --extra dev
 
 ## Configuration
 
-Settings are read from a `.env` file (INI format) in the repo root:
+All settings live in a single `gui_settings.json` file in the working
+directory. It's created automatically on first launch (with the config
+fields blank), and every field is editable from the GUI's Settings dialog —
+no hand-editing required:
 
-```ini
-[Payroll-Checker]
-hours_guide = C:\path\to\hours_guide_attachment.xlsx
-website = https://your-timesheet-portal.example.com
-first_sunday = YYYY-MM-DD
-holidays = YYYY-MM-DD, YYYY-MM-DD
-seasonal_days =
+```json
+{
+  "input_dir": "C:\\Users\\you\\Downloads",
+  "output_dir": "C:\\Users\\you\\Downloads",
+  "selected_reports": ["status_of_timesheet", "overlapping_hours", "not_started", "breakdown_of_hours"],
+  "hours_guide": "C:\\path\\to\\hours_guide_attachment.pdf",
+  "website": "https://your-timesheet-portal.example.com",
+  "first_sunday": "YYYY-MM-DD",
+  "holidays": ["YYYY-MM-DD", "YYYY-MM-DD"],
+  "seasonal_days": ""
+}
 ```
 
-- `hours_guide` — file attached to outgoing emails.
-- `website` — link appended to every email body.
-- `first_sunday` — the first Sunday of the current pay year, used to compute
-  which of the 26 biweekly pay periods is active.
-- `holidays` — comma-separated ISO dates checked against holiday earn codes.
+- `hours_guide` — file attached to outgoing emails (blank = no attachment).
+- `website` — link appended to every email body (required to run).
+- `first_sunday` — the last Sunday of the previous pay year, used to compute
+  which of the 26 biweekly pay periods is active (required unless a pay
+  period is passed explicitly).
+- `holidays` — dates checked against holiday earn codes (entered
+  comma-separated in the Settings dialog).
 - `seasonal_days` — reserved, not yet used.
+- `input_dir`/`output_dir`/`selected_reports` — GUI state (folders and
+  report choices), also managed from the GUI.
+
+The CLI reads the same file, so for CLI/Task Scheduler runs make sure
+`gui_settings.json` is in the working directory (fill it in once via the
+GUI, or by hand).
 
 ## Usage
 
 ```sh
-python -m payroll_checker              # run checks and send emails
-python -m payroll_checker --dry-run    # display drafted emails instead of sending
-python -m payroll_checker --reports    # skip emails, only generate charts/CSV reports
-python -m payroll_checker --pay-period 5  # override the auto-detected pay period
+uv run python cli.py                   # run checks and send emails
+uv run python cli.py --dry-run         # display drafted emails instead of sending
+uv run python cli.py --reports         # skip emails, only generate charts/CSV reports
+uv run python cli.py --pay-period 5    # override the auto-detected pay period
 ```
+
+(`python -m payroll_checker` and `python -m payroll_checker.cli` are
+equivalent to `python cli.py`.)
 
 Installing the package also provides a `payroll-checker` console script,
 equivalent to `python -m payroll_checker`:
@@ -90,7 +108,8 @@ Requires the `gui` extra (`pip install -e .[gui]`, or `uv sync --extra gui`):
 
 ```sh
 uv sync --extra gui
-uv run python -m payroll_checker.gui
+uv run python gui.py
+# equivalently: uv run python -m payroll_checker.gui
 # or, once installed:
 payroll-checker-gui
 ```
@@ -99,11 +118,11 @@ Dry-run always starts checked on launch (opens Outlook drafts for review
 instead of sending), regardless of what was left checked last session, and
 unchecking it asks for confirmation before a real send. The pay-period
 override likewise always starts back on auto-detect each launch, rather than
-silently reusing a manual override from a previous session. Folder choices
-and selected reports, but not the dry-run toggle or the pay-period override,
-are remembered between launches in a `gui_settings.json` file next to `.env` —
-separate from it, since `.env` is hand-edited program config and
-`gui_settings.json` is GUI-only state the app writes itself.
+silently reusing a manual override from a previous session. Folder choices,
+selected reports, and the program config (hours guide, timesheet URL, first
+Sunday, holidays), but not the dry-run toggle or the pay-period override,
+are remembered between launches in the `gui_settings.json` file described
+under Configuration above.
 
 ### Building a standalone .exe
 
@@ -112,20 +131,20 @@ A double-clickable single-file `.exe` can be built with
 
 ```sh
 uv sync --extra build --extra gui
-uv run pyinstaller payroll_checker_gui.spec
+uv run python -OO -m PyInstaller payroll_checker_gui.spec
 ```
 
-(or, without uv: `pip install -e .[build,gui]` then `pyinstaller payroll_checker_gui.spec`)
+(or, without uv: `pip install -e .[build,gui]` then `python -OO -m PyInstaller payroll_checker_gui.spec`)
 
 The result is `dist/PayrollChecker.exe`. Two things to know before running it:
 
-- **Working directory matters.** `.env`, `gui_settings.json`, and
-  `payroll_checker.log` are all resolved relative to the process's current
+- **Working directory matters.** `gui_settings.json` and
+  `payroll_checker.log` are resolved relative to the process's current
   working directory, not the `.exe`'s own folder. Double-clicking the `.exe`
   from Explorer sets the working directory to wherever the `.exe` lives, so
-  keeping `PayrollChecker.exe` in the same folder as `.env` works; if you
+  the settings file lives (and is auto-created) next to the `.exe`; if you
   launch it via a shortcut instead, set the shortcut's "Start in" field to
-  that folder too.
+  that folder too, or your settings will end up somewhere else.
 - **First run may get flagged.** Unsigned PyInstaller single-file
   executables commonly trigger a Windows SmartScreen or antivirus warning
   the first time they're run — expected for an unsigned/uncommon binary,
@@ -134,57 +153,47 @@ The result is `dist/PayrollChecker.exe`. Two things to know before running it:
 ## Project structure
 
 ```
+cli.py                        # dev launcher: `uv run python cli.py`
+gui.py                        # dev launcher: `uv run python gui.py`
 src/payroll_checker/
-  main.py                   # CLI entry point: parse args, resolve config, call runner.run()
-  __main__.py                # enables `python -m payroll_checker`
-  runner.py                   # builds/runs the selected reports for a pay period, sends emails
-  cli.py                       # argparse CLI (--dry-run, --reports, --pay-period)
-  config.py                     # Config, .env loading, pay-period math
-  downloads.py                   # Downloads-folder file discovery + CSV output (single source of truth)
-  validation.py                   # email address validation
-  outlook.py                       # Outlook COM email sending (only module that needs win32com)
-  logging_setup.py                  # rotating file logging setup
-  templates.py                       # email body templates + render()
-  checkers/
-    base.py                          # BaseChecker: shared "find CSV" / "build DataFrame" methods
-    hours_breakdown.py                # earn code, overtime, holiday checks
-    overlapping.py                     # overlapping timesheet entry check
-    status.py                           # not-started / pending checks + status charts
-    reporter.py                          # overtime / union meal / weekend OT CSV reports
-  gui/                                   # tkinter desktop GUI (see "GUI" above)
-    app.py                                # composition root: window, worker thread, wiring
-    widgets.py                             # tkinter layout only, no orchestration knowledge
-    theme.py                                # dark palette + sv_ttk/title-bar theming
-    worker.py                               # runs runner.run() on a background thread
-    settings.py                              # gui_settings.json load/save
-    log_handler.py                            # forwards log records into the GUI's log pane
-tests/                        # config, base-checker, runner, and Downloads-I/O tests
+  __main__.py                 # enables `python -m payroll_checker` (runs the CLI)
+  cli/
+    main.py                   # CLI entry point: argparse, resolve config, call runner.run()
+    __main__.py               # enables `python -m payroll_checker.cli`
+  logic/
+    runner.py                 # builds/runs the selected reports for a pay period, sends emails
+    reports.py                # report names + required source files (shared with the GUI)
+    config.py                 # Config resolution + pay-period math
+    settings.py               # gui_settings.json load/save (program config + GUI state)
+    downloads.py              # Downloads-folder file discovery + CSV output (single source of truth)
+    validation.py             # email address validation
+    outlook.py                # Outlook COM email sending (only module that needs win32com)
+    logging_setup.py          # rotating file logging setup
+    templates.py              # email body templates + render()
+    checkers/
+      base.py                 # BaseChecker: shared "find CSV" / "build DataFrame" methods
+      hours_breakdown.py      # earn code, overtime, holiday checks
+      overlapping.py          # overlapping timesheet entry check
+      status.py               # not-started / pending checks + status charts
+      reporter.py             # overtime / union meal / weekend OT CSV reports
+  gui/                        # tkinter desktop GUI (see "GUI" above)
+    app.py                    # composition root: window, worker thread, wiring
+    widgets.py                # tkinter layout only, no orchestration knowledge
+    theme.py                  # dark palette + sv_ttk/title-bar theming (root + dialogs)
+    worker.py                 # runs runner.run() on a background thread
+    log_handler.py            # forwards log records into the GUI's log pane
 pyproject.toml                # project metadata, dependencies, console-script entry points
 ```
 
-## Testing
-
-```sh
-uv sync --extra dev
-uv run pytest
-```
-
-Current coverage is a smoke-test scaffold for the shared plumbing: `.env`/
-pay-period config loading (`tests/test_config.py`), the shared checker base
-class's CSV discovery and DataFrame loading (`tests/test_base_checker.py`),
-Downloads file I/O (`tests/test_downloads.py`), per-report selection and
-directory overrides in the runner (`tests/test_runner.py`), the Outlook
-connection-check helper's failure path (`tests/test_outlook_status.py`),
-and GUI settings persistence (`tests/gui/test_settings.py`). Per-checker
-payroll-rule coverage (e.g. `HoursBreakdown`'s overtime/holiday logic) is a
-follow-up. The GUI's widgets/threading code itself is manually verified,
-not unit tested — same convention as `outlook.py`, since both need a live
-Windows environment (Outlook, or a display) to meaningfully exercise.
-
 ## To do
 
-- [ ] Add a proper logger for failures (see `main.py` docstring) — logging
-      is only partially wired up (`src/payroll_checker/logging_setup.py`).
+- [ ] Rewrite the test suite for the `cli/`/`logic/`/`gui/` restructuring — the
+      previous `tests/` tree (config/pay-period, base-checker CSV/DataFrame
+      loading, Downloads I/O, runner report selection, Outlook connection-check
+      failure path, GUI settings persistence) was removed and hasn't been
+      rebuilt against the new module layout yet.
+- [ ] Add a proper logger for failures (see `cli/main.py` docstring) — logging
+      is only partially wired up (`src/payroll_checker/logic/logging_setup.py`).
 - [ ] Automated file collection (e.g. pulling exports instead of relying on
       manual downloads).
 - [ ] `pyautogui`-based automation for steps that still require manual
@@ -192,12 +201,13 @@ Windows environment (Outlook, or a display) to meaningfully exercise.
 - [ ] Windows Task Scheduler integration for unattended runs.
 - [ ] Refactor per `.claude/CLAUDE.md`:
   - [x] Parent class with shared "find CSV in Downloads" and "build filtered
-        DataFrame" methods (`checkers/base.py:BaseChecker`).
+        DataFrame" methods (`logic/checkers/base.py:BaseChecker`).
   - [x] One report object per CSV, each exposing per-error-type checks that
-        return unique email lists (`checkers/`: `HoursBreakdown`,
+        return unique email lists (`logic/checkers/`: `HoursBreakdown`,
         `OverlappingHours`, `NotStarted`, `Pending`, `Reporter`).
   - [ ] Encode the full earn-code rule set (REG, VAC, SICK, HOL, HLW, OT,
         OT2, SHF, PER, MD, BRV, VLT/JRY) per job class (OO/PP/WW vs UU/VV).
-- [ ] Wire up `seasonal_days` from `.env` (currently unused; see
-      `HoursBreakdown.seasonal_detection_type`/`_date` stubs).
-- [ ] Restore/implement `Pending.zero_hours_list` in `checkers/status.py`.
+- [ ] Wire up the `seasonal_days` setting (stored in `gui_settings.json` but
+      currently unused; see `HoursBreakdown.seasonal_detection_type`/`_date`
+      stubs).
+- [ ] Restore/implement `Pending.zero_hours_list` in `logic/checkers/status.py`.

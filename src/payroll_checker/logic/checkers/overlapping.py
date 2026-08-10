@@ -5,9 +5,9 @@ from pathlib import Path
 
 from pandas import DataFrame
 
-from payroll_checker.checkers.base import BaseChecker
-from payroll_checker.downloads import save_df_to_downloads
-from payroll_checker.validation import make_list
+from payroll_checker.logic.checkers.base import BaseChecker
+from payroll_checker.logic.downloads import save_df_to_downloads
+from payroll_checker.logic.validation import make_list
 
 logger = logging.getLogger(__name__)
 

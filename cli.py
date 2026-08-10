@@ -1,4 +1,4 @@
-"""Enables `python -m payroll_checker`."""
+"""Dev launcher for the CLI: `uv run python cli.py [--dry-run ...]`."""
 
 from payroll_checker.cli.main import main
 

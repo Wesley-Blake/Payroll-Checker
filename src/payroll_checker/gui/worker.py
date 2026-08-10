@@ -10,7 +10,6 @@ threading-plus-queue pattern for keeping tkinter responsive during
 background work. Nothing here imports tkinter.
 """
 
-import argparse
 import logging
 import queue
 import threading
@@ -18,9 +17,10 @@ from pathlib import Path
 
 import pythoncom
 
-from payroll_checker.config import load_config
-from payroll_checker.outlook import get_outlook_status
-from payroll_checker.runner import REPORT_NAMES, run
+from payroll_checker.logic.config import load_config
+from payroll_checker.logic.outlook import get_outlook_status
+from payroll_checker.logic.reports import REPORT_NAMES
+from payroll_checker.logic.runner import run
 
 logger = logging.getLogger(__name__)
 
@@ -54,8 +54,7 @@ def run_in_background(
         # dispatch inside `WinEmail.__init__`.
         pythoncom.CoInitialize()
         try:
-            args = argparse.Namespace(dry_run=dry_run, reports=False, pay_period=pay_period)
-            config = load_config(args)
+            config = load_config(dry_run=dry_run, pay_period=pay_period)
             run(
                 config,
                 reports=reports,
@@ -82,7 +81,9 @@ def run_in_background(
     return thread
 
 
-def check_outlook_status_in_background(message_queue: "queue.Queue") -> threading.Thread:
+def check_outlook_status_in_background(
+    message_queue: "queue.Queue",
+) -> threading.Thread:
     """Check the Outlook connection on a short-lived daemon thread.
 
     `get_outlook_status()` does a live COM dispatch, which can block for a
@@ -93,7 +94,9 @@ def check_outlook_status_in_background(message_queue: "queue.Queue") -> threadin
     """
 
     def target() -> None:
-        connected, email = get_outlook_status()  # CoInitialize/CoUninitialize is internal to this
+        connected, email = (
+            get_outlook_status()
+        )  # CoInitialize/CoUninitialize is internal to this
         message_queue.put(("outlook_status", connected, email))
 
     thread = threading.Thread(target=target, daemon=True)

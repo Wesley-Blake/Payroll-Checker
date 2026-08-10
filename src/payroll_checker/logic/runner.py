@@ -1,17 +1,18 @@
 """Run a selected subset of reports for a pay period and email/report the results."""
 
 import logging
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
-from payroll_checker.checkers.hours_breakdown import HoursBreakdown
-from payroll_checker.checkers.overlapping import OverlappingHours
-from payroll_checker.checkers.reporter import Reporter
-from payroll_checker.checkers.status import NotStarted, Pending
-from payroll_checker.config import Config, load_holidays
-from payroll_checker.downloads import DOWNLOADS_DIR, find_latest_file, has_file
-from payroll_checker.outlook import WinEmail
-from payroll_checker.templates import (
+from payroll_checker.logic.checkers.hours_breakdown import HoursBreakdown
+from payroll_checker.logic.checkers.overlapping import OverlappingHours
+from payroll_checker.logic.checkers.reporter import Reporter
+from payroll_checker.logic.checkers.status import NotStarted, Pending
+from payroll_checker.logic.config import Config, load_holidays
+from payroll_checker.logic.downloads import DOWNLOADS_DIR, find_latest_file
+from payroll_checker.logic.outlook import WinEmail
+from payroll_checker.logic.reports import REPORT_NAMES, find_missing_reports
+from payroll_checker.logic.templates import (
     HOLIDAY_DATE_TEMPLATE,
     HOLIDAY_TYPE_TEMPLATE,
     INCORRECT_EARN_CODE_TEMPLATE,
@@ -34,38 +35,6 @@ ProgressCallback = Callable[[str, str], None]
 
 # One check to run: (name, function to call, args for that function, email body).
 Check = tuple[str, Callable[..., list[str]], tuple, str]
-
-# The 4 reports described in `.claude/CLAUDE.md`. "breakdown_of_hours" bundles
-# all 7 `HoursBreakdown` checks together, matching the CLAUDE.md report list
-# rather than exposing each sub-check individually.
-REPORT_NAMES = (
-    "status_of_timesheet",
-    "overlapping_hours",
-    "not_started",
-    "breakdown_of_hours",
-)
-
-# Which source-file keyword(s) each report needs -- matches the keywords each
-# `_build_*_checks` function below passes to `find_latest_file`. Used by
-# `find_missing_reports` to check every selected report's file(s) up front.
-REPORT_FILE_KEYWORDS: dict[str, tuple[str, ...]] = {
-    "status_of_timesheet": ("Comments",),
-    "overlapping_hours": ("Overlapping",),
-    "not_started": ("not_yet_started_WTE",),
-    "breakdown_of_hours": ("ts_break_down", "Active_Empls"),
-}
-
-
-def find_missing_reports(reports: tuple[str, ...], input_dir: Path) -> list[str]:
-    """Return the names of `reports` that have at least one missing source file
-    in `input_dir` -- checked for every selected report up front, so a run can
-    list everything that's missing at once instead of stopping at whichever
-    report's file search happens to run first."""
-    return [
-        report
-        for report in reports
-        if not all(has_file(keyword, input_dir) for keyword in REPORT_FILE_KEYWORDS[report])
-    ]
 
 
 def run(
@@ -126,8 +95,8 @@ def run(
             template,
             emailer,
             pay_period,
-            config.args.dry_run,
-            config.args.reports,
+            config.dry_run,
+            config.reports,
             progress,
         )
 
@@ -190,7 +159,9 @@ def _build_not_started_checks(
     pay_period: int, timesheet_link: str, input_dir: Path
 ) -> list[Check]:
     """Build the not-started check."""
-    not_started = NotStarted(find_latest_file("not_yet_started_WTE", input_dir), pay_period)
+    not_started = NotStarted(
+        find_latest_file("not_yet_started_WTE", input_dir), pay_period
+    )
     return [
         (
             "not_started",
@@ -302,7 +273,9 @@ def run_check(
         return
     logger.info("Check '%s': %d result(s).", name, len(result))
     try:
-        emailer.send_email(result, pay_period, template, dry_run=dry_run, reports=reports)
+        emailer.send_email(
+            result, pay_period, template, dry_run=dry_run, reports=reports
+        )
     except Exception:
         logger.exception("Check '%s': failed to send email; continuing.", name)
         if progress:
