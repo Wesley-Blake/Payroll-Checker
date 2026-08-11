@@ -187,14 +187,17 @@ pyproject.toml                # project metadata, dependencies, console-script e
 
 ## To do
 
-- [ ] Automated file collection (e.g. pulling exports instead of relying on
-      manual downloads).
-- [ ] `pyautogui`-based automation for steps that still require manual
-      interaction.
-- [ ] Windows Task Scheduler integration for unattended runs.
-- [ ] Encode the full earn-code rule set (REG, VAC, SICK, HOL, HLW, OT,
-      OT2, SHF, PER, MD, BRV, VLT/JRY) per job class (OO/PP/WW vs UU/VV).
-- [ ] Wire up the `seasonal_days` setting (stored in `gui_settings.json` but
+1. [ ] Make universal for all schools. Current Union implementation is SF specific.
+2. [ ] SF SHF check. Only at 1800 < and REG overlapping.
+3. [ ] Total hours check. [REG, VAC, SICK, HOL, PER]
+4. [ ] Wire up the `seasonal_days` setting (stored in `gui_settings.json` but
       currently unused; see `HoursBreakdown.seasonal_detection_type`/`_date`
       stubs).
-- [ ] Restore/implement `Pending.zero_hours_list` in `logic/checkers/status.py`.
+5. [ ] Restore/implement `Pending.zero_hours_list` in `logic/checkers/status.py`.
+6. [ ] Automated file collection (e.g. pulling exports instead of relying on
+      manual downloads).
+7. [ ] `pyautogui`-based automation for steps that still require manual
+      interaction.
+8. [ ] Windows Task Scheduler integration for unattended runs.
+9. [ ] Encode the full earn-code rule set (REG, VAC, SICK, HOL, HLW, OT,
+      OT2, SHF, PER, MD, BRV, VLT/JRY) per job class (OO/PP/WW vs UU/VV).
