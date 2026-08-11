@@ -21,6 +21,7 @@ from payroll_checker.logic.templates import (
     OVERLAPPING_TEMPLATE,
     OVERTIME_TEMPLATE,
     PENDING_TEMPLATE,
+    SHF_TEMPLATE,
     UNION_WEEKEND_OT_TEMPLATE,
     WEEKEND_OT_TEMPLATE,
     render,
@@ -175,7 +176,7 @@ def _build_not_started_checks(
 def _build_breakdown_of_hours_checks(
     pay_period: int, timesheet_link: str, input_dir: Path
 ) -> tuple[list[Check], HoursBreakdown]:
-    """Build all 7 `HoursBreakdown` checks.
+    """Build all 8 `HoursBreakdown` checks.
 
     Also returns the `HoursBreakdown` instance itself, since `run()` reuses
     its already-parsed `raw_hours_df` afterward for the union-meal report
@@ -236,6 +237,12 @@ def _build_breakdown_of_hours_checks(
             hours_breakdown.union_weekend_overtime,
             (),
             render(UNION_WEEKEND_OT_TEMPLATE, timesheet_link=timesheet_link),
+        ),
+        (
+            "sf_shift_differential",
+            hours_breakdown.sf_shift_differential,
+            (),
+            render(SHF_TEMPLATE, timesheet_link=timesheet_link),
         ),
     ]
     return checks, hours_breakdown

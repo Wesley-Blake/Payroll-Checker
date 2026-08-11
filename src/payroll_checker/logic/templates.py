@@ -84,6 +84,16 @@ Please review your timesheet and allocate overtime if appropriate.
 For guidance, you can review the overtime rules in the union contract.
 ${timesheet_link}""")
 
+SHF_TEMPLATE = Template("""\
+Hi,
+
+Friendly Reminder: Shift Differential Issue Detected
+
+We noticed a problem with Shift Differential (SHF) on your timesheet. A quick review of the rules:
+Shift Differential is for union employees only, starts at or after 6:00pm, and should end when the matching Regular Earnings entry ends.
+If you worked Regular hours past 6:00pm, please add a matching SHF entry; if SHF was entered outside these rules, please correct it.
+${timesheet_link}""")
+
 OVERLAPPING_TEMPLATE = Template("""\
 Hi,
 

@@ -22,7 +22,8 @@ class HoursBreakdown(BaseChecker):
         "JobECLS",
         "earn_code",
         "ts_entry_date",
-        "appr_id",
+        "time_in",
+        "time_out",
         "earning_hours",
     ]
 
@@ -55,10 +56,65 @@ class HoursBreakdown(BaseChecker):
                 "ts_entry_date",
                 "appr_id",
                 "PacificEmail",
+                "time_in",
+                "time_out",
                 "earning_hours",
             ]
         ]
         assert isinstance(self.hours_df, DataFrame)
+
+    def sf_shift_differential(self) -> list[str]:
+        """Return emails for employees with missing or invalid SHF entries.
+
+        SHF is union (UU/VV) only, starts at/after 1800, and must sit inside
+        a same-day REG entry ending when that REG entry ends (so it can never
+        overlap OT/OT2). A union REG entry running past 1800 must have a
+        matching SHF. Shifts never cross midnight, so times compare as
+        plain HHMM numbers (2400 accepted as an end-of-day time_out).
+        """
+        df = self.hours_df.copy()
+        df = df[df["earn_code"].isin(["REG", "SHF"])].drop_duplicates()
+        for col in ("time_in", "time_out"):
+            df[col] = pd.to_numeric(
+                df[col].astype(str).str.replace(":", ""), errors="coerce"
+            )
+        # Entries without clock times (lump-sum hours) can't be evaluated.
+        df = df.dropna(subset=["time_in", "time_out"])
+        valid = (
+            df["time_in"].between(0, 2359)
+            & df["time_out"].between(0, 2400)
+            & (df["time_in"] % 100 < 60)
+            & (df["time_out"] % 100 < 60)
+        )
+        if (~valid).any():
+            logger.warning(
+                "Dropped %d row(s) with invalid clock times from SHF check",
+                (~valid).sum(),
+            )
+            df = df[valid]
+        bad_rows = []
+        for _, day in df.groupby(["Empl_ID", "ts_entry_date"]):
+            reg = day[day["earn_code"] == "REG"]
+            shf = day[day["earn_code"] == "SHF"]
+            is_union = day["JobECLS"].isin(["UU", "VV"]).all()
+            for idx, row in shf.iterrows():
+                matches_reg = (
+                    (reg["time_out"] == row["time_out"])
+                    & (reg["time_in"] <= row["time_in"])
+                ).any()
+                if not is_union or row["time_in"] < 1800 or not matches_reg:
+                    bad_rows.append(day.loc[[idx]])
+            if is_union:
+                missing = reg[
+                    (reg["time_out"] > 1800) & (~reg["time_out"].isin(shf["time_out"]))
+                ]
+                if not missing.empty:
+                    bad_rows.append(missing)
+        final_df = (pd.concat(bad_rows) if bad_rows else df.iloc[0:0]).drop_duplicates()
+        save_df_to_downloads(final_df, "sf_shift_differential.csv")
+        if final_df.empty:
+            return []
+        return make_list(final_df["PacificEmail"].dropna().unique().tolist())
 
     def incorrect_earn_code(self) -> list[str]:
         """Return emails for employees with an SHD earn code."""
