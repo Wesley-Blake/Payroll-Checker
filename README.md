@@ -187,26 +187,13 @@ pyproject.toml                # project metadata, dependencies, console-script e
 
 ## To do
 
-- [ ] Rewrite the test suite for the `cli/`/`logic/`/`gui/` restructuring — the
-      previous `tests/` tree (config/pay-period, base-checker CSV/DataFrame
-      loading, Downloads I/O, runner report selection, Outlook connection-check
-      failure path, GUI settings persistence) was removed and hasn't been
-      rebuilt against the new module layout yet.
-- [ ] Add a proper logger for failures (see `cli/main.py` docstring) — logging
-      is only partially wired up (`src/payroll_checker/logic/logging_setup.py`).
 - [ ] Automated file collection (e.g. pulling exports instead of relying on
       manual downloads).
 - [ ] `pyautogui`-based automation for steps that still require manual
       interaction.
 - [ ] Windows Task Scheduler integration for unattended runs.
-- [ ] Refactor per `.claude/CLAUDE.md`:
-  - [x] Parent class with shared "find CSV in Downloads" and "build filtered
-        DataFrame" methods (`logic/checkers/base.py:BaseChecker`).
-  - [x] One report object per CSV, each exposing per-error-type checks that
-        return unique email lists (`logic/checkers/`: `HoursBreakdown`,
-        `OverlappingHours`, `NotStarted`, `Pending`, `Reporter`).
-  - [ ] Encode the full earn-code rule set (REG, VAC, SICK, HOL, HLW, OT,
-        OT2, SHF, PER, MD, BRV, VLT/JRY) per job class (OO/PP/WW vs UU/VV).
+- [ ] Encode the full earn-code rule set (REG, VAC, SICK, HOL, HLW, OT,
+      OT2, SHF, PER, MD, BRV, VLT/JRY) per job class (OO/PP/WW vs UU/VV).
 - [ ] Wire up the `seasonal_days` setting (stored in `gui_settings.json` but
       currently unused; see `HoursBreakdown.seasonal_detection_type`/`_date`
       stubs).
