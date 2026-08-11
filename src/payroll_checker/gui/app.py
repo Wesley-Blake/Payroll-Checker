@@ -15,7 +15,6 @@ from tkinter import messagebox, ttk
 
 from payroll_checker.gui import theme, widgets
 from payroll_checker.gui.log_handler import QueueLogHandler
-from payroll_checker.logic.settings import load_settings, save_settings
 from payroll_checker.gui.worker import (
     check_outlook_status_in_background,
     run_in_background,
@@ -23,6 +22,7 @@ from payroll_checker.gui.worker import (
 from payroll_checker.logic.downloads import DOWNLOADS_DIR
 from payroll_checker.logic.logging_setup import configure_logging
 from payroll_checker.logic.reports import REPORT_NAMES
+from payroll_checker.logic.settings import load_settings, save_settings
 
 logger = logging.getLogger(__name__)
 
