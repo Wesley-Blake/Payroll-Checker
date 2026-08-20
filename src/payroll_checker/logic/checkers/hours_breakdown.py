@@ -54,7 +54,6 @@ class HoursBreakdown(BaseChecker):
                 "JobECLS",
                 "earn_code",
                 "ts_entry_date",
-                "appr_id",
                 "PacificEmail",
                 "time_in",
                 "time_out",
