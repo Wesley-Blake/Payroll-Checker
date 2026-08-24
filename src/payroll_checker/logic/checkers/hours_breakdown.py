@@ -27,17 +27,26 @@ class HoursBreakdown(BaseChecker):
         "earning_hours",
     ]
 
-    def __init__(self, file_hours: Path, file_email: Path, pay_period: int) -> None:
+    def __init__(
+        self,
+        file_hours: Path,
+        file_email: Path,
+        pay_period: int,
+        output_dir: Path | None = None,
+    ) -> None:
         """Build the hours dataframe for `pay_period`, joined to employee emails.
 
         `file_hours` is the timesheet breakdown-by-earn-code export; `file_email`
         is the active-employee export used only for its EmplID -> PacificEmail
         mapping (not pay-period filtered, since it's a lookup table).
+        `output_dir` is where each check's CSV is saved (defaults to
+        `DOWNLOADS_DIR`, via `save_df_to_downloads`).
 
         Keeps the full, unsubsetted read as `self.raw_hours_df` so
         `runner.py` can hand it to `Reporter` afterward instead of that
         class re-parsing the same file.
         """
+        self.output_dir = output_dir
         email_df = self.build_dataframe(file_email, self.EMAIL_HEADERS, pay_period=None)
         self.raw_hours_df = self.read_csv(file_hours, pay_period)
         self.hours_df = self.raw_hours_df[self.HOURS_HEADERS].drop_duplicates()
@@ -110,7 +119,7 @@ class HoursBreakdown(BaseChecker):
                 if not missing.empty:
                     bad_rows.append(missing)
         final_df = (pd.concat(bad_rows) if bad_rows else df.iloc[0:0]).drop_duplicates()
-        save_df_to_downloads(final_df, "sf_shift_differential.csv")
+        save_df_to_downloads(final_df, "sf_shift_differential.csv", self.output_dir)
         if final_df.empty:
             return []
         return make_list(final_df["PacificEmail"].dropna().unique().tolist())
@@ -119,7 +128,7 @@ class HoursBreakdown(BaseChecker):
         """Return emails for employees with an SHD earn code."""
         stk_earn_codes = ["SHD"]
         final_df = self.hours_df[self.hours_df["earn_code"].isin(stk_earn_codes)].copy()
-        save_df_to_downloads(final_df, "incorrect_earn_code.csv")
+        save_df_to_downloads(final_df, "incorrect_earn_code.csv", self.output_dir)
         if final_df.empty:
             return []
         return make_list(final_df["PacificEmail"].unique().tolist())
@@ -138,7 +147,7 @@ class HoursBreakdown(BaseChecker):
         union = (is_uu | is_vv) & (new_order_df["earning_hours"] > 7.5)
         non_union = ~(is_uu | is_vv) & (new_order_df["earning_hours"] > 8)
         final_df = new_order_df[(union | non_union)]
-        save_df_to_downloads(final_df, "over_eight_hours.csv")
+        save_df_to_downloads(final_df, "over_eight_hours.csv", self.output_dir)
         if final_df.empty:
             return []
         return make_list(final_df["PacificEmail"].unique().tolist())
@@ -160,7 +169,7 @@ class HoursBreakdown(BaseChecker):
             self.hours_df.columns.tolist()[:-1], as_index=False
         )["earning_hours"].sum()
         final_df = new_order_df[(new_order_df["earning_hours"] > 12)]
-        save_df_to_downloads(final_df, "over_twelve_hours.csv")
+        save_df_to_downloads(final_df, "over_twelve_hours.csv", self.output_dir)
         if final_df.empty:
             return []
         return make_list(final_df["PacificEmail"].unique().tolist())
@@ -190,7 +199,7 @@ class HoursBreakdown(BaseChecker):
         )
         result = weekly[weekly["hours_total"] > 40]
         final_df = df[df["Empl_ID"].isin(result["Empl_ID"])]
-        save_df_to_downloads(final_df, "weekend_overtime.csv")
+        save_df_to_downloads(final_df, "weekend_overtime.csv", self.output_dir)
         if final_df.empty:
             return []
         return make_list(final_df["PacificEmail"].dropna().unique().tolist())
@@ -219,7 +228,7 @@ class HoursBreakdown(BaseChecker):
         )["ts_entry_date"].nunique()
         df = df.rename(columns={"ts_entry_date": "unique_reg_days"})
         result = df[df["unique_reg_days"] > 5]
-        save_df_to_downloads(result, "union_weekend_overtime.csv")
+        save_df_to_downloads(result, "union_weekend_overtime.csv", self.output_dir)
         if result.empty:
             return []
         return make_list(result["PacificEmail"].dropna().unique().tolist())
@@ -262,7 +271,7 @@ class HoursBreakdown(BaseChecker):
             | (filtered_df["earn_code"] == "HCR")
         )
         final_df = filtered_df[~filter_holiday]
-        save_df_to_downloads(final_df, "holiday_detection_type.csv")
+        save_df_to_downloads(final_df, "holiday_detection_type.csv", self.output_dir)
         if final_df.empty:
             return []
         return make_list(final_df["PacificEmail"].unique().tolist())
@@ -282,7 +291,7 @@ class HoursBreakdown(BaseChecker):
         final_df = filtered_df
         if hol_list:
             final_df = filtered_df[~filtered_df["ts_entry_date"].isin(hol_list)]
-        save_df_to_downloads(final_df, "holiday_detection_date.csv")
+        save_df_to_downloads(final_df, "holiday_detection_date.csv", self.output_dir)
         if final_df.empty:
             return []
         return make_list(final_df["PacificEmail"].unique().tolist())

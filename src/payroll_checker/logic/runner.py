@@ -79,12 +79,14 @@ def run(
         )
         checks += report_checks
     if "overlapping_hours" in reports:
-        checks += _build_overlapping_hours_checks(pay_period, timesheet_link, input_dir)
+        checks += _build_overlapping_hours_checks(
+            pay_period, timesheet_link, input_dir, output_dir
+        )
     if "not_started" in reports:
         checks += _build_not_started_checks(pay_period, timesheet_link, input_dir)
     if "breakdown_of_hours" in reports:
         report_checks, hours_breakdown = _build_breakdown_of_hours_checks(
-            pay_period, timesheet_link, input_dir
+            pay_period, timesheet_link, input_dir, output_dir
         )
         checks += report_checks
 
@@ -140,11 +142,11 @@ def _build_status_of_timesheet_checks(
 
 
 def _build_overlapping_hours_checks(
-    pay_period: int, timesheet_link: str, input_dir: Path
+    pay_period: int, timesheet_link: str, input_dir: Path, output_dir: Path
 ) -> list[Check]:
     """Build the overlapping-hours check."""
     overlapping_hours = OverlappingHours(
-        find_latest_file("Overlapping", input_dir), pay_period
+        find_latest_file("Overlapping", input_dir), pay_period, output_dir
     )
     return [
         (
@@ -174,7 +176,7 @@ def _build_not_started_checks(
 
 
 def _build_breakdown_of_hours_checks(
-    pay_period: int, timesheet_link: str, input_dir: Path
+    pay_period: int, timesheet_link: str, input_dir: Path, output_dir: Path
 ) -> tuple[list[Check], HoursBreakdown]:
     """Build all 8 `HoursBreakdown` checks.
 
@@ -184,7 +186,7 @@ def _build_breakdown_of_hours_checks(
     """
     hours_file = find_latest_file("ts_break_down", input_dir)
     hours_breakdown = HoursBreakdown(
-        hours_file, find_latest_file("Active_Empls", input_dir), pay_period
+        hours_file, find_latest_file("Active_Empls", input_dir), pay_period, output_dir
     )
     list_o_holidays = load_holidays()
     checks: list[Check] = [

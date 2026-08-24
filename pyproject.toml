@@ -10,6 +10,7 @@ dependencies = [
     "validators",
     "pywin32; platform_system == 'Windows'",
     "pywin32>=312",
+    "sv-ttk>=2.6.1",
 ]
 
 [project.optional-dependencies]
