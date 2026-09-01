@@ -233,42 +233,68 @@ class HoursBreakdown(BaseChecker):
             return []
         return make_list(result["PacificEmail"].dropna().unique().tolist())
 
-    def seasonal_detection_type(self, hol_list: list) -> list[str]:
-        """Not yet implemented.
+    def seasonal_detection_type(self, seasonal_list: list) -> list[str]:
+        """Return emails for holiday-eligible employees with bad seasonal-day codes.
 
-        TODO: implement per `.claude/CLAUDE.md` "seasonal_days" rules
-        (not yet configured/used).
-        CLAUDE: This should only have HOL  or (DOC|HCR). If there is a REG, it requires an HOL for the same number of hours or more.
+        Mirrors `holiday_detection_type`, but the only correct codes on a
+        seasonal day are HOL, DOC, and HCR (people on LOA). REG is also
+        allowed, but only when that day's HOL hours are the same or more
+        than its REG hours -- REG must be fully covered by an equal-or-larger
+        HOL entry the same day. `seasonal_list` is the list of ISO seasonal
+        dates for the pay period.
         """
-        if not hol_list:
+        if not seasonal_list:
             return []
-        filtered_df = self.hours_df[self.hours_df["ts_entry_date"].isin(hol_list)]
+        filtered_df = self.hours_df[self.hours_df["ts_entry_date"].isin(seasonal_list)]
         if filtered_df.empty:
             return []
         # Exclude non benefit eligible.
         holiday_eligible = ["OO", "PP", "UU", "VV"]
         filtered_df = filtered_df[filtered_df["JobECLS"].isin(holiday_eligible)]
         # Remove correct codes.
-        filter_holiday = (
-            (filtered_df["earn_code"] == "HOL")
-            | (filtered_df["earn_code"] == "REG")
-            |
-            # People on LOA.
-            (filtered_df["earn_code"] == "DOC")
-            | (filtered_df["earn_code"] == "HCR")
+        correct_code = filtered_df["earn_code"].isin(["HOL", "DOC", "HCR"])
+        # REG is correct only if that day's HOL hours cover its REG hours.
+        day_keys = ["Empl_ID", "ts_entry_date"]
+        hol_totals = (
+            filtered_df[filtered_df["earn_code"] == "HOL"]
+            .groupby(day_keys)["earning_hours"]
+            .sum()
         )
-        final_df = filtered_df[~filter_holiday]
-        save_df_to_downloads(final_df, "holiday_detection_type.csv", self.output_dir)
+        reg_totals = (
+            filtered_df[filtered_df["earn_code"] == "REG"]
+            .groupby(day_keys)["earning_hours"]
+            .sum()
+        )
+        reg_covered_days = reg_totals[
+            reg_totals <= hol_totals.reindex(reg_totals.index, fill_value=0)
+        ].index
+        reg_covered = (filtered_df["earn_code"] == "REG") & (
+            pd.MultiIndex.from_frame(filtered_df[day_keys]).isin(reg_covered_days)
+        )
+        final_df = filtered_df[~(correct_code | reg_covered)]
+        save_df_to_downloads(final_df, "seasonal_detection_type.csv", self.output_dir)
         if final_df.empty:
             return []
         return make_list(final_df["PacificEmail"].unique().tolist())
 
-    def seasonal_detection_date(self):
-        """Not yet implemented.
+    def seasonal_detection_date(self, seasonal_list: list) -> list[str]:
+        """Return emails for HOL/DOC/HCR earn codes reported on a non-seasonal day.
 
-        TODO: implement per `.claude/CLAUDE.md` "seasonal_days" rules
-        (not yet configured/used).
+        Mirrors `holiday_detection_date`. Runs even when `seasonal_list` is
+        empty, since any HOL/DOC/HCR entry is suspect if there's no
+        configured seasonal day at all.
         """
+        filter_seasonal = self.hours_df["earn_code"].isin(["HOL", "DOC", "HCR"])
+        filtered_df = self.hours_df[filter_seasonal]
+        if filtered_df.empty:
+            return []
+        final_df = filtered_df
+        if seasonal_list:
+            final_df = filtered_df[~filtered_df["ts_entry_date"].isin(seasonal_list)]
+        save_df_to_downloads(final_df, "seasonal_detection_date.csv", self.output_dir)
+        if final_df.empty:
+            return []
+        return make_list(final_df["PacificEmail"].unique().tolist())
 
     def holiday_detection_type(self, hol_list: list) -> list[str]:
         """Return emails for holiday-eligible employees missing HOL/HLW pay.
