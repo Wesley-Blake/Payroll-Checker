@@ -233,12 +233,35 @@ class HoursBreakdown(BaseChecker):
             return []
         return make_list(result["PacificEmail"].dropna().unique().tolist())
 
-    def seasonal_detection_type(self):
+    def seasonal_detection_type(self, hol_list: list) -> list[str]:
         """Not yet implemented.
 
         TODO: implement per `.claude/CLAUDE.md` "seasonal_days" rules
         (not yet configured/used).
+        CLAUDE: This should only have HOL  or (DOC|HCR). If there is a REG, it requires an HOL for the same number of hours or more.
         """
+        if not hol_list:
+            return []
+        filtered_df = self.hours_df[self.hours_df["ts_entry_date"].isin(hol_list)]
+        if filtered_df.empty:
+            return []
+        # Exclude non benefit eligible.
+        holiday_eligible = ["OO", "PP", "UU", "VV"]
+        filtered_df = filtered_df[filtered_df["JobECLS"].isin(holiday_eligible)]
+        # Remove correct codes.
+        filter_holiday = (
+            (filtered_df["earn_code"] == "HOL")
+            | (filtered_df["earn_code"] == "REG")
+            |
+            # People on LOA.
+            (filtered_df["earn_code"] == "DOC")
+            | (filtered_df["earn_code"] == "HCR")
+        )
+        final_df = filtered_df[~filter_holiday]
+        save_df_to_downloads(final_df, "holiday_detection_type.csv", self.output_dir)
+        if final_df.empty:
+            return []
+        return make_list(final_df["PacificEmail"].unique().tolist())
 
     def seasonal_detection_date(self):
         """Not yet implemented.
