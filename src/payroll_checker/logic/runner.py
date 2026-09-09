@@ -22,6 +22,7 @@ from payroll_checker.logic.templates import (
     OVERTIME_TEMPLATE,
     PENDING_TEMPLATE,
     SHF_TEMPLATE,
+    UNION_WEEKEND_OT2_TEMPLATE,
     UNION_WEEKEND_OT_TEMPLATE,
     WEEKEND_OT_TEMPLATE,
     render,
@@ -239,6 +240,12 @@ def _build_breakdown_of_hours_checks(
             hours_breakdown.union_weekend_overtime,
             (),
             render(UNION_WEEKEND_OT_TEMPLATE, timesheet_link=timesheet_link),
+        ),
+        (
+            "union_weekend_ot2",
+            hours_breakdown.union_weekend_ot2,
+            (),
+            render(UNION_WEEKEND_OT2_TEMPLATE, timesheet_link=timesheet_link),
         ),
         (
             "sf_shift_differential",

@@ -84,6 +84,14 @@ Please review your timesheet and allocate overtime if appropriate.
 For guidance, you can review the overtime rules in the union contract.
 ${timesheet_link}""")
 
+UNION_WEEKEND_OT2_TEMPLATE = Template("""\
+Hi,
+Friendly Reminder: Union Weekend OT2 Detected
+We noticed that on your 6th or 7th consecutive day of regular hours in a Monday-Sunday week, you recorded more than 7.5 hours.
+Hours over 7.5 on that day need to be allocated as OT2, not regular overtime.
+For guidance, you can review the overtime rules in the union contract.
+${timesheet_link}""")
+
 SHF_TEMPLATE = Template("""\
 Hi,
 

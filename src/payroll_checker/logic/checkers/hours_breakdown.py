@@ -233,6 +233,43 @@ class HoursBreakdown(BaseChecker):
             return []
         return make_list(result["PacificEmail"].dropna().unique().tolist())
 
+    def union_weekend_ot2(self) -> list[str]:
+        """Return emails for union employees needing OT2 on a 6th/7th day.
+
+        On a 6th or 7th consecutive REG day in a Monday-Sunday week, union
+        (UU/VV) employees are already entitled to OT (see
+        `union_weekend_overtime`). If that day's hours exceed 7.5, the
+        excess needs to be coded as OT2, not plain OT.
+        """
+        df = self.hours_df.copy()
+        df = df[
+            (df["earn_code"] == "REG") & (df["JobECLS"].isin(["UU", "VV"]))
+        ].drop_duplicates()
+        if df.empty:
+            return []
+        df["ts_entry_date"] = pd.to_datetime(df["ts_entry_date"]).dt.floor("D")
+        min_date = df["ts_entry_date"].min()
+        period_start = min_date - pd.to_timedelta(min_date.weekday(), unit="D")
+        df["days_from_period_start"] = (df["ts_entry_date"] - period_start).dt.days
+        df = df[
+            (df["days_from_period_start"] >= 0) & (df["days_from_period_start"] < 14)
+        ]
+        if df.empty:
+            return []
+        df["week_number"] = (df["days_from_period_start"] // 7) + 1
+        daily = df.groupby(
+            ["Empl_ID", "week_number", "ts_entry_date", "PacificEmail"],
+            as_index=False,
+        )["earning_hours"].sum()
+        daily["day_rank"] = daily.groupby(["Empl_ID", "week_number"])[
+            "ts_entry_date"
+        ].rank(method="dense")
+        final_df = daily[(daily["day_rank"] > 5) & (daily["earning_hours"] > 7.5)]
+        save_df_to_downloads(final_df, "union_weekend_ot2.csv", self.output_dir)
+        if final_df.empty:
+            return []
+        return make_list(final_df["PacificEmail"].dropna().unique().tolist())
+
     def seasonal_detection_type(self, seasonal_list: list) -> list[str]:
         """Return emails for holiday-eligible employees with bad seasonal-day codes.
 
