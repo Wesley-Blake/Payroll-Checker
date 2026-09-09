@@ -16,6 +16,21 @@ logger = logging.getLogger(__name__)
 class HoursBreakdown(BaseChecker):
     """Compute overtime and holiday detection email recipient lists."""
 
+    @staticmethod
+    def _on_listed_day(entry_dates: pd.Series, date_list: list[str]) -> pd.Series:
+        """Return a boolean mask of which `entry_dates` fall on a day in `date_list`.
+
+        Compares actual calendar dates rather than raw strings: the export's
+        `ts_entry_date` format doesn't match the plain ISO-ish strings
+        `date_list` holds (e.g. "20260907"), so a direct string `.isin()`
+        would never match even a real holiday/seasonal day, and every
+        HOL/HLW entry would look like it landed on the wrong day.
+        """
+        assert date_list, "date_list must be non-empty"
+        normalized_entries = pd.to_datetime(entry_dates).dt.normalize()
+        normalized_list = pd.to_datetime(pd.Series(date_list)).dt.normalize()
+        return normalized_entries.isin(normalized_list)
+
     EMAIL_HEADERS = ["EmplID", "PacificEmail"]
     HOURS_HEADERS = [
         "Empl_ID",
@@ -282,7 +297,9 @@ class HoursBreakdown(BaseChecker):
         """
         if not seasonal_list:
             return []
-        filtered_df = self.hours_df[self.hours_df["ts_entry_date"].isin(seasonal_list)]
+        filtered_df = self.hours_df[
+            self._on_listed_day(self.hours_df["ts_entry_date"], seasonal_list)
+        ]
         if filtered_df.empty:
             return []
         # Exclude non benefit eligible.
@@ -319,15 +336,27 @@ class HoursBreakdown(BaseChecker):
 
         Mirrors `holiday_detection_date`. Runs even when `seasonal_list` is
         empty, since any HOL/DOC/HCR entry is suspect if there's no
-        configured seasonal day at all.
+        configured seasonal day at all. But if none of `seasonal_list`'s
+        dates actually fall within this pay period, there's nothing to
+        check against -- return no results rather than flagging every
+        HOL/DOC/HCR entry as being on the wrong day.
         """
+        if (
+            seasonal_list
+            and not self._on_listed_day(
+                self.hours_df["ts_entry_date"], seasonal_list
+            ).any()
+        ):
+            return []
         filter_seasonal = self.hours_df["earn_code"].isin(["HOL", "DOC", "HCR"])
         filtered_df = self.hours_df[filter_seasonal]
         if filtered_df.empty:
             return []
         final_df = filtered_df
         if seasonal_list:
-            final_df = filtered_df[~filtered_df["ts_entry_date"].isin(seasonal_list)]
+            final_df = filtered_df[
+                ~self._on_listed_day(filtered_df["ts_entry_date"], seasonal_list)
+            ]
         save_df_to_downloads(final_df, "seasonal_detection_date.csv", self.output_dir)
         if final_df.empty:
             return []
@@ -341,7 +370,9 @@ class HoursBreakdown(BaseChecker):
         """
         if not hol_list:
             return []
-        filtered_df = self.hours_df[self.hours_df["ts_entry_date"].isin(hol_list)]
+        filtered_df = self.hours_df[
+            self._on_listed_day(self.hours_df["ts_entry_date"], hol_list)
+        ]
         if filtered_df.empty:
             return []
         # Exclude non benefit eligible.
@@ -366,8 +397,16 @@ class HoursBreakdown(BaseChecker):
         """Return emails for HOL/HLW earn codes reported on a non-holiday day.
 
         Runs even when `hol_list` is empty, since any HOL/HLW entry is
-        suspect if there's no configured holiday at all.
+        suspect if there's no configured holiday at all. But if none of
+        `hol_list`'s dates actually fall within this pay period, there's
+        nothing to check against -- return no results rather than flagging
+        every HOL/HLW entry as being on the wrong day.
         """
+        if (
+            hol_list
+            and not self._on_listed_day(self.hours_df["ts_entry_date"], hol_list).any()
+        ):
+            return []
         filter_holiday = (self.hours_df["earn_code"] == "HOL") | (
             self.hours_df["earn_code"] == "HLW"
         )
@@ -376,7 +415,9 @@ class HoursBreakdown(BaseChecker):
             return []
         final_df = filtered_df
         if hol_list:
-            final_df = filtered_df[~filtered_df["ts_entry_date"].isin(hol_list)]
+            final_df = filtered_df[
+                ~self._on_listed_day(filtered_df["ts_entry_date"], hol_list)
+            ]
         save_df_to_downloads(final_df, "holiday_detection_date.csv", self.output_dir)
         if final_df.empty:
             return []

@@ -14,6 +14,15 @@ from payroll_checker.logic.validation import make_list
 logger = logging.getLogger(__name__)
 
 
+def _display_name(name: str) -> str:
+    """Convert a snake_case check name to a subject-friendly display form,
+    e.g. "weekend_overtime" -> "Weekend_Overtime". Underscores are kept so
+    the result stays one readable token in the subject line.
+    """
+    assert name, "check name must be non-empty"
+    return "_".join(word.capitalize() for word in name.split("_"))
+
+
 def get_outlook_status() -> tuple[bool, str | None]:
     """Return `(connected, current_user_email)` for the local Outlook install.
 
@@ -77,6 +86,7 @@ class WinEmail:
     def send_email(
         self,
         bcc: list[str],
+        name: str,
         pay_period: str,
         body: str,
         dry_run: bool = False,
@@ -84,6 +94,8 @@ class WinEmail:
     ) -> None:
         """Draft an Outlook email BCC'd to `bcc` and send, display, or skip it.
 
+        `name` is the check's internal name (e.g. "weekend_overtime"); it's
+        formatted into the subject as "Weekend_Overtime - BW{pay_period}".
         `reports=True` skips sending entirely (reports-only run). Otherwise
         `dry_run=True` opens the draft for review instead of sending it.
         """
@@ -96,7 +108,7 @@ class WinEmail:
         try:
             mail = self.outlook.CreateItem(0)
             mail.BCC = "; ".join(bcc)
-            mail.Subject = f"Pay Period: BW{pay_period}"
+            mail.Subject = f"{_display_name(name)} - BW{pay_period}"
             if self.attachment.is_file():
                 mail.Attachments.Add(str(self.attachment))
             mail.Body = body

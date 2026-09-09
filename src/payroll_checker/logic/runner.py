@@ -313,7 +313,7 @@ def run_check(
     logger.info("Check '%s': %d result(s).", name, len(result))
     try:
         emailer.send_email(
-            result, pay_period, template, dry_run=dry_run, reports=reports
+            result, name, pay_period, template, dry_run=dry_run, reports=reports
         )
     except Exception:
         logger.exception("Check '%s': failed to send email; continuing.", name)
