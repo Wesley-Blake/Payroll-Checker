@@ -6,24 +6,17 @@ from pathlib import Path
 import pandas as pd
 from pandas import DataFrame
 
-from payroll_checker.logic.downloads import find_latest_file
-
 logger = logging.getLogger(__name__)
 
 
 class BaseChecker:
     """Base for objects that load one payroll CSV export into a dataframe.
 
-    Subclasses use `find_csv_in_downloads` to locate their source file
-    (typically done once in `runner.py`, before construction) and
-    `build_dataframe` in `__init__` to load it, keeping only the columns
-    they need.
+    Source-file discovery is `downloads.find_latest_file`, called once by
+    `runner.py` before constructing a checker; subclasses use
+    `build_dataframe` in `__init__` to load the resulting file, keeping only
+    the columns they need.
     """
-
-    @staticmethod
-    def find_csv_in_downloads(keyword: str, directory: Path | None = None) -> Path:
-        """Return the newest Downloads file whose name contains `keyword`."""
-        return find_latest_file(keyword, directory)
 
     @staticmethod
     def read_csv(file: Path, pay_period: int | None = None) -> DataFrame:

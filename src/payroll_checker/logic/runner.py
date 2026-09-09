@@ -8,7 +8,7 @@ from payroll_checker.logic.checkers.hours_breakdown import HoursBreakdown
 from payroll_checker.logic.checkers.overlapping import OverlappingHours
 from payroll_checker.logic.checkers.reporter import Reporter
 from payroll_checker.logic.checkers.status import NotStarted, Pending
-from payroll_checker.logic.config import Config, load_holidays
+from payroll_checker.logic.config import Config, load_holidays, load_seasonal_days
 from payroll_checker.logic.downloads import DOWNLOADS_DIR, find_latest_file
 from payroll_checker.logic.outlook import WinEmail
 from payroll_checker.logic.reports import REPORT_NAMES, find_missing_reports
@@ -21,6 +21,8 @@ from payroll_checker.logic.templates import (
     OVERLAPPING_TEMPLATE,
     OVERTIME_TEMPLATE,
     PENDING_TEMPLATE,
+    SEASONAL_DATE_TEMPLATE,
+    SEASONAL_TYPE_TEMPLATE,
     SHF_TEMPLATE,
     UNION_WEEKEND_OT2_TEMPLATE,
     UNION_WEEKEND_OT_TEMPLATE,
@@ -179,7 +181,7 @@ def _build_not_started_checks(
 def _build_breakdown_of_hours_checks(
     pay_period: int, timesheet_link: str, input_dir: Path, output_dir: Path
 ) -> tuple[list[Check], HoursBreakdown]:
-    """Build all 8 `HoursBreakdown` checks.
+    """Build all 11 `HoursBreakdown` checks.
 
     Also returns the `HoursBreakdown` instance itself, since `run()` reuses
     its already-parsed `raw_hours_df` afterward for the union-meal report
@@ -190,6 +192,7 @@ def _build_breakdown_of_hours_checks(
         hours_file, find_latest_file("Active_Empls", input_dir), pay_period, output_dir
     )
     list_o_holidays = load_holidays()
+    list_o_seasonal_days = load_seasonal_days()
     checks: list[Check] = [
         (
             "holiday_detection_type",
@@ -208,6 +211,26 @@ def _build_breakdown_of_hours_checks(
             render(
                 HOLIDAY_DATE_TEMPLATE,
                 list_o_holidays=", ".join(list_o_holidays),
+                timesheet_link=timesheet_link,
+            ),
+        ),
+        (
+            "seasonal_detection_type",
+            hours_breakdown.seasonal_detection_type,
+            (list_o_seasonal_days,),
+            render(
+                SEASONAL_TYPE_TEMPLATE,
+                list_o_seasonal_days=", ".join(list_o_seasonal_days),
+                timesheet_link=timesheet_link,
+            ),
+        ),
+        (
+            "seasonal_detection_date",
+            hours_breakdown.seasonal_detection_date,
+            (list_o_seasonal_days,),
+            render(
+                SEASONAL_DATE_TEMPLATE,
+                list_o_seasonal_days=", ".join(list_o_seasonal_days),
                 timesheet_link=timesheet_link,
             ),
         ),

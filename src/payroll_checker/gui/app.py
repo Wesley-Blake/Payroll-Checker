@@ -40,7 +40,7 @@ CHECK_COUNTS = {
     "status_of_timesheet": 1,
     "overlapping_hours": 1,
     "not_started": 1,
-    "breakdown_of_hours": 8,
+    "breakdown_of_hours": 11,
 }
 
 CONNECTION_POLL_MS = 5_000

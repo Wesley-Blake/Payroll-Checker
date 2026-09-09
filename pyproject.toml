@@ -8,8 +8,7 @@ dependencies = [
     "pandas",
     "matplotlib",
     "validators",
-    "pywin32; platform_system == 'Windows'",
-    "pywin32>=312",
+    "pywin32>=312; platform_system == 'Windows'",
     "sv-ttk>=2.6.1",
 ]
 

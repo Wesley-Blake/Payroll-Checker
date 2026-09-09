@@ -30,6 +30,22 @@ Holiday Pay doesn't reflect on the holiday.
 ${list_o_holidays}
 ${timesheet_link}""")
 
+SEASONAL_DATE_TEMPLATE = Template("""\
+Hi,
+
+Friendly Reminder: Holiday / Holiday Worked was detected.
+Holiday and or Holiday Worked was reported on the incorrect day.
+${list_o_seasonal_days}
+${timesheet_link}""")
+
+SEASONAL_TYPE_TEMPLATE = Template("""\
+Hi,
+
+Friendly Reminder: Holiday / Holiday Worked was detected.
+Holiday Pay doesn't reflect on the seasonal day.
+${list_o_seasonal_days}
+${timesheet_link}""")
+
 NOT_STARTED_TEMPLATE = Template("""\
 Hi,
 

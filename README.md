@@ -14,6 +14,7 @@ Outlook. It also generates status charts and CSV reports for the pay period.
 3. Runs a series of checks against the data:
    - Incorrect earn code for an employee's job class (ECLS)
    - Holiday pay/type/date mismatches
+   - Seasonal-day pay/type/date mismatches
    - Daily overtime (>8h / >7.5h for union job classes)
    - Over-twelve-hours-in-a-day overtime
    - Weekend overtime (standard and union)
@@ -67,7 +68,8 @@ no hand-editing required:
   period is passed explicitly).
 - `holidays` — dates checked against holiday earn codes (entered
   comma-separated in the Settings dialog).
-- `seasonal_days` — reserved, not yet used.
+- `seasonal_days` — dates checked against seasonal-day earn codes (HOL,
+  DOC, HCR; entered comma-separated in the Settings dialog).
 - `input_dir`/`output_dir`/`selected_reports` — GUI state (folders and
   report choices), also managed from the GUI.
 
@@ -190,14 +192,11 @@ pyproject.toml                # project metadata, dependencies, console-script e
 1. [ ] Make universal for all schools. Current Union implementation is SF specific.
 2. [ ] SF SHF check. Only at 1800 < and REG overlapping.
 3. [ ] Total hours check. [REG, VAC, SICK, HOL, PER]
-4. [ ] Wire up the `seasonal_days` setting (stored in `gui_settings.json` but
-      currently unused; see `HoursBreakdown.seasonal_detection_type`/`_date`
-      stubs).
-5. [ ] Restore/implement `Pending.zero_hours_list` in `logic/checkers/status.py`.
-6. [ ] Automated file collection (e.g. pulling exports instead of relying on
+4. [ ] Restore/implement `Pending.zero_hours_list` in `logic/checkers/status.py`.
+5. [ ] Automated file collection (e.g. pulling exports instead of relying on
       manual downloads).
-7. [ ] `pyautogui`-based automation for steps that still require manual
+6. [ ] `pyautogui`-based automation for steps that still require manual
       interaction.
-8. [ ] Windows Task Scheduler integration for unattended runs.
-9. [ ] Encode the full earn-code rule set (REG, VAC, SICK, HOL, HLW, OT,
+7. [ ] Windows Task Scheduler integration for unattended runs.
+8. [ ] Encode the full earn-code rule set (REG, VAC, SICK, HOL, HLW, OT,
       OT2, SHF, PER, MD, BRV, VLT/JRY) per job class (OO/PP/WW vs UU/VV).

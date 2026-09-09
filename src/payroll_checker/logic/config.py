@@ -84,3 +84,20 @@ def load_holidays() -> list[str]:
         datetime.fromisoformat(holiday)
         holiday_list.append(holiday)
     return holiday_list
+
+
+def load_seasonal_days() -> list[str]:
+    """Load seasonal-day dates from the settings file.
+
+    Unlike `holidays`, `seasonal_days` is persisted as one raw
+    comma-separated string (see the Settings dialog's "Seasonal days:"
+    field), so it's split here rather than in `settings.py`.
+    """
+    seasonal_list: list[str] = []
+    for raw_day in load_settings().seasonal_days.split(","):
+        day = raw_day.strip()
+        if not day:
+            continue
+        datetime.fromisoformat(day)
+        seasonal_list.append(day)
+    return seasonal_list
